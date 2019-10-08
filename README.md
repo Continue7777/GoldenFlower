@@ -19,6 +19,23 @@ chooseAvailbleAction 获取某人的合理动作空间
 + 奖励：闷、看都是减钱、开看输赢加减钱，输光给个很大的负值。
 + 状态：本局动作序列，自己的本金，自己手牌
 
+## env接口
+    class GoldenFlower:
+        def __init__()： #初始化
+        def reset()： #初始化环境
+        def step(self,action):return ovbservation,reward,done #环境交互
+       
+## DQN接口
+    class DQN：
+        def __init__(): #初始化
+        def build_network(): #构建网络模型
+        def get_action(self,status) #通过训练好的网络，根据状态获取动作
+        def save_model() #保存模型
+        def restore() #加载模型
+        def store_transition(observation, action, reward, observation_) #DQN存储记忆
+        def experience_replay() #记忆回放
+        def train() #训练
+
 ## DQN伪码
     def run_maze():
         step = 0    # 用来控制什么时候学习
