@@ -36,7 +36,10 @@ chooseAvailbleAction 获取某人的合理动作空间
         def experience_replay() #记忆回放
         def train() #训练
 
-## DQN伪码
+## 流程图
+![NIPS 2013](https://img-blog.csdn.net/20170612221532013?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvdTAxMzIzNjk0Ng==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+## DQN伪码（抄的莫烦的迷宫代码，大体逻辑差不多）
     def run_maze():
         step = 0    # 用来控制什么时候学习
         for episode in range(300):
@@ -89,3 +92,12 @@ chooseAvailbleAction 获取某人的合理动作空间
 
 # todo
 + 把demo改成强化学习环境的接口。
++ 编写DQN函数(采用2013版本)
+
+# 实验待验证
++ 如果观察训练，DQN更新的是TD0误差，本身就不是真实值。如果探索合理的话，应该还是可以学到点东西？
++ target网络是否需要，进行下对比，网络是否存在不稳定情况。
++ 两个同模型同时进步，如何对比？
+    + 采用第三方进行对比
+    + 人工检验，看看学习到的策略是否合理
+    + 固定某些状态，观察策略的变化
