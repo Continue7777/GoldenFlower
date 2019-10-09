@@ -75,7 +75,7 @@ chooseAvailbleAction 获取某人的合理动作空间
 
 
 # todo
-+ 把demo改成强化学习环境的接口。
+√ 把demo改成强化学习环境的接口。
 + 编写DQN函数(采用2013版本)
 
 # 实验待验证
