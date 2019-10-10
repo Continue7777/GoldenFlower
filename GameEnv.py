@@ -47,13 +47,26 @@ class GlodenFlower:
             self.personMoney[playerI] -= 1
         self.deskMoney += 2
 
+
+    def stepA(self,action):
+        observation_next,reward,done = self.step(action,"A")
+        if done:
+            return observation_next,reward,done
+        action = random.choice(gameEnv.chooseAvailbleAction(playerI))
+        print "B",action,self.deskMoney
+        observation_next, reward, done = self.step(action,"B")
+        if action == "丢_1":
+            reward = self.deskMoney
+        if done and reward == 0:
+            reward = self.deskMoney
+        return observation_next, reward, done
+
+
     def step(self,action,playerI):
         doneFlag = False
         giveupFlag = False
         self.playSequence.append(str(playerI) + "_" + action)
-
-        playSeq = [str("my" if playerI == i.split("_")[0] else "else") + "_" + i.split("_")[1] + "_" + i.split("_")[2] for i in self.playSequence]
-        observation = [playSeq[:-1],copy.copy(self.playerCards[playerI]),self.personMoney[playerI]]
+        observation = [copy.copy(self.playSequence),copy.copy(self.playerCards[playerI]),self.personMoney[playerI]]
 
         action_type,action_money = action.split("_")
         action_money = int(action_money)
@@ -123,6 +136,8 @@ class GlodenFlower:
     def status_init(self):
         self.nowPrice = 2
         self.deskMoney = len(self.personMoney.keys())
+        self.personStatus["A"] = "闷"
+        self.personStatus["B"] = "闷"
         self.gameStauts = self.gameStatsMap["on"]
         self.playSequence = []
 
@@ -221,27 +236,34 @@ for episode in range(3):
     # 初始化环境
     gameEnv.reset()
 
-    playerI = gameEnv.getStartTurn()
+    # playerI = gameEnv.getStartTurn()
+    playerI = "A"
+    observation_this = []
     while True:
         # DQN 根据观测值选择行为
-        # action = RL.choose_action(observation, playerI)
-        action = random.choice(gameEnv.chooseAvailbleAction(playerI))
-        print playerI, action, gameEnv.deskMoney, gameEnv.nowPrice
-        playerI = "B" if playerI == "A" else "A"
+        # action = RL.choose_action(observation_this, playerI)
+        # if playerI == "B":
+        #     action = random.choice(gameEnv.chooseAvailbleAction(playerI))
+        #     gameEnv.step(action,"B")
+        #     print playerI, action, gameEnv.deskMoney, gameEnv.nowPrice
+
 
         # 环境根据行为给出下一个 state, reward, 是否终止
-        observation_, reward, done = gameEnv.step(action, playerI)
+        action = random.choice(gameEnv.chooseAvailbleAction(playerI))
+        print playerI, action, gameEnv.deskMoney, gameEnv.nowPrice
+        observation_next, reward, done = gameEnv.stepA(action)
+
 
         # DQN 存储记忆
         # RL.store_transition(observation, action, reward)
-        memory.append((observation_, action, reward))
+        memory.append((observation_this, action, reward,observation_next))
 
         # 控制学习起始时间和频率 (先累积一些记忆再开始学习)
         # if (step > 200) and (step % 5 == 0):
         #     RL.learn()
 
         # 将下一个 state_ 变为 下次循环的 state
-        observation = observation_
+        observation_this = observation_next
 
         # 如果终止, 就跳出循环
         if done:
@@ -249,5 +271,5 @@ for episode in range(3):
 
         # end of game
 print('game over')
-for i in  memory:
-    print i[0][1],i[0][0],i[0][2],"\taction:",i[1],"\treward:",i[2]
+for i in memory:
+    print i[0],"\taction:",i[1],"\treward:",i[2],i[3]
