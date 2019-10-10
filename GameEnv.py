@@ -18,6 +18,7 @@ class GlodenFlower:
         # 全局状态
         self.personMoney = {"A":moneyList[0],"B":moneyList[1]}
         self.playerCards = {"A":"","B":""}
+        self.stepsNum = 0
 
         # 每步参数
         self.whoWinLast = "A"
@@ -63,6 +64,7 @@ class GlodenFlower:
 
 
     def step(self,action,playerI):
+        self.stepNum += 1
         doneFlag = False
         giveupFlag = False
         self.playSequence.append(str(playerI) + "_" + action)
@@ -113,8 +115,13 @@ class GlodenFlower:
             raise Exception("异常操作！")
 
         reward = -action_money
+
         if doneFlag:
             AWin = self.compare(self.playerCards["A"], self.playerCards["B"])
+            if playerI == "A" and action_type == "丢":
+                AWin = False
+            if playerI == "B" and action_type == "丢":
+                AWin = True
             if AWin:
                 self.whoWinLast = "A"
                 self.personMoney["A"] += self.deskMoney
@@ -134,6 +141,7 @@ class GlodenFlower:
         return observation,reward,doneFlag
 
     def status_init(self):
+        self.stepNum = 0
         self.nowPrice = 2
         self.deskMoney = len(self.personMoney.keys())
         self.personStatus["A"] = "闷"
@@ -236,18 +244,20 @@ for episode in range(3):
     # 初始化环境
     gameEnv.reset()
 
-    # playerI = gameEnv.getStartTurn()
-    playerI = "A"
+    playerI = gameEnv.getStartTurn()
+    print playerI,"win last"
     observation_this = []
+    if playerI == "B":
+        action = random.choice(gameEnv.chooseAvailbleAction(playerI))
+        print playerI, action, gameEnv.deskMoney, gameEnv.nowPrice
+        observation_next, reward, done = gameEnv.step(action, "B")
+        playerI = "A"
+        if done:
+            continue
+
     while True:
         # DQN 根据观测值选择行为
         # action = RL.choose_action(observation_this, playerI)
-        # if playerI == "B":
-        #     action = random.choice(gameEnv.chooseAvailbleAction(playerI))
-        #     gameEnv.step(action,"B")
-        #     print playerI, action, gameEnv.deskMoney, gameEnv.nowPrice
-
-
         # 环境根据行为给出下一个 state, reward, 是否终止
         action = random.choice(gameEnv.chooseAvailbleAction(playerI))
         print playerI, action, gameEnv.deskMoney, gameEnv.nowPrice
