@@ -1,12 +1,10 @@
-#-*- coding:utf-8 -*-
-
 import random
 class GlodenFlower:
     def __init__(self,moneyList):
         # 豹子 > 同花顺 > 金花 > 顺子 > 对子 > 单
         self.scoreMap = {"豹子":10,"同花顺":9,"金花":8,"顺子":7,"对子":6,"单":5}
         self.gameStatsMap = {"on":1,"over":0}
-        self.reverseScoreMap = {v: k for k, v in self.scoreMap.iteritems()}
+        self.reverseScoreMap = {v: k for k, v in self.scoreMap.items()}
         self.VMap = {"1":14,"2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8,"9":9,"10":10,"J":11,"Q":12,"K":13}
         self.debug = True
         self.personMoney = {"A":moneyList[0],"B":moneyList[1]}
@@ -70,7 +68,7 @@ class GlodenFlower:
         firstScoreA = self.score(cardsA)
         firstScoreB = self.score(cardsB)
 
-        if self.debug:print self.reverseScoreMap[firstScoreA],self.reverseScoreMap[firstScoreB]
+        if self.debug:print (self.reverseScoreMap[firstScoreA],self.reverseScoreMap[firstScoreB])
 
         vA = sorted([self.VMap[i.split("_")[1]] for i in cardsA],reverse=True)
         vB = sorted([self.VMap[i.split("_")[1]] for i in cardsB],reverse=True)
@@ -87,7 +85,7 @@ class GlodenFlower:
         action_money = int(action_money)
         if action_type == "看" and self.nowPrice <= action_money:
             if action_money > self.personMoney[playerI]:
-                print playerI," 没钱了1"
+                print (playerI," 没钱了1")
                 return False
             else:
                 self.personMoney[playerI] -= action_money
@@ -96,10 +94,10 @@ class GlodenFlower:
                 self.nowPrice = action_money
         elif action_type == "闷" and self.nowPrice <= action_money * 2.5:
             if self.personStatus[playerI] == "看":
-                print playerI," 已经看过了，不能闷了"
+                print (playerI," 已经看过了，不能闷了")
                 return False
             if action_money > self.personMoney[playerI]:
-                print playerI," 没钱了2"
+                print (playerI," 没钱了2")
                 return False
             else:
                 self.personMoney[playerI] -= action_money
@@ -108,7 +106,7 @@ class GlodenFlower:
                 self.nowPrice = action_money * 2.5
         elif action_type == "开":
             if self.nowPrice > self.personMoney[playerI]:
-                print playerI," 没钱了3"
+                print (playerI," 没钱了3")
                 return False
             else:
                 self.personMoney[playerI] -= self.nowPrice
@@ -117,7 +115,7 @@ class GlodenFlower:
                 self.gameStauts = self.gameStatsMap["over"]
         elif action_type == "闷开":
             if self.nowPrice / 2.5 > self.personMoney[playerI]:
-                print playerI," 没钱了3"
+                print (playerI," 没钱了3")
                 return False
             else:
                 self.personMoney[playerI] -= self.nowPrice / 2.5
@@ -145,13 +143,13 @@ class GlodenFlower:
 
     def play(self,n):
         player1Cards,player2Cards = self.deal(n)
-        if self.debug:print player1Cards,player2Cards
+        if self.debug:print (player1Cards,player2Cards)
         while 1:
             for playerI in ["A","B"]:
                 action = random.choice(self.chooseAvailbleAction(playerI))
                 self.action(playerI,action)
                 if self.debug:
-                    print playerI,action,self.deskMoney,self.nowPrice
+                    print (playerI,action,self.deskMoney,self.nowPrice)
 
                 if action == "丢_1":
                     if playerI == "A":
@@ -184,5 +182,5 @@ game = GlodenFlower([2000,2000])
 for i in range(100):
     game.init()
     flag = game.play(2)
-    print game.personMoney
-    print
+    print (game.personMoney)
+    print()

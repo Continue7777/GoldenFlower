@@ -24,7 +24,9 @@ chooseAvailbleAction 获取某人的合理动作空间
         def __init__()： #初始化
         def reset()： #初始化环境
         def step(self,action):return ovbservation,reward,done #环境交互
-       
+            observation:序列:a-action b-action ...   stop  A是agent,b是镜像agent
+            reward:出牌没结束就是亏，出牌结束赢了就是赢之前桌子上的钱，每步单独一算
+            done:是否结束
 ## DQN接口
     class DQN：
         def __init__(): #初始化

@@ -1,5 +1,6 @@
 import random
 import copy
+import numpy as np
 class GlodenFlower:
     def __init__(self,moneyList):
         self.debug = True
@@ -48,12 +49,16 @@ class GlodenFlower:
 
 
 
-    def stepA(self,action):
+    def stepA(self,action,RLModel):
         observation_next,reward,done = self.step(action,"A")
         if done:
             return observation_next,reward,done
-        actionB = random.choice(gameEnv.chooseAvailbleAction("B"))
-        print ("B",actionB,self.deskMoney,self.nowPrice,gameEnv.personStatus["B"])
+        if RLModel:
+            availble_actions = self.chooseAvailbleAction("B")
+            actionB = RLModel.choose_action(np.array([observation_next]),availble_actions)
+        else:
+            actionB = random.choice(self.chooseAvailbleAction("B"))
+        if self.debug:print ("B",actionB,self.deskMoney,self.nowPrice,self.personStatus["B"])
         observation_next, rewardB, done = self.step(actionB,"B")
         if action == "丢_0": # 对手弃牌
             reward = self.deskMoney - int(action.split("_")[1])
@@ -268,7 +273,7 @@ if __name__ == '__main__':
             # 环境根据行为给出下一个 state, reward, 是否终止
             action = random.choice(gameEnv.chooseAvailbleAction(playerI))
             print (playerI, action, gameEnv.deskMoney, gameEnv.nowPrice,gameEnv.personStatus[playerI])
-            observation_next, reward, done = gameEnv.stepA(action)
+            observation_next, reward, done = gameEnv.stepA(action,None)
 
 
             # DQN 存储记忆
