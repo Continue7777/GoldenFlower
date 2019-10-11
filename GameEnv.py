@@ -1,5 +1,3 @@
-#-*- coding:utf-8 -*-
-
 import random
 import copy
 class GlodenFlower:
@@ -8,12 +6,12 @@ class GlodenFlower:
 
         # 游戏参数
         self.scoreMap = {"豹子":10,"同花顺":9,"金花":8,"顺子":7,"对子":6,"单":5}
-        self.reverseScoreMap = {v: k for k, v in self.scoreMap.iteritems()}
+        self.reverseScoreMap = {v: k for k, v in self.scoreMap.items()}
         self.VMap = {"1":14,"2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8,"9":9,"10":10,"J":11,"Q":12,"K":13}
         self.gameStatsMap = {"on":1,"over":0}
 
         # 动作空间
-        self.actionMoney = {"闷_2":-2,"闷_4":-4,"闷_8":-8,"看_2":-2,"看_5":-5,"看_10":-10,"看_20":-20,"闷开_1":0,"丢_1":0}
+        self.actionMoney = {"闷_2":-2,"闷_4":-4,"闷_8":-8,"看_2":-2,"看_5":-5,"看_10":-10,"看_20":-20,"开_0":0,"闷开_0":0,"丢_0":0}
 
         # 全局状态
         self.personMoney = {"A":moneyList[0],"B":moneyList[1]}
@@ -46,20 +44,21 @@ class GlodenFlower:
         # 下底
         for playerI in self.personMoney.keys():
             self.personMoney[playerI] -= 1
-        self.deskMoney += 2
+        self.deskMoney = len(self.personMoney.keys())
+
 
 
     def stepA(self,action):
         observation_next,reward,done = self.step(action,"A")
         if done:
             return observation_next,reward,done
-        action = random.choice(gameEnv.chooseAvailbleAction(playerI))
-        print "B",action,self.deskMoney
-        observation_next, reward, done = self.step(action,"B")
-        if action == "丢_1":
-            reward = self.deskMoney
-        if done and reward == 0:
-            reward = self.deskMoney
+        actionB = random.choice(gameEnv.chooseAvailbleAction("B"))
+        print ("B",actionB,self.deskMoney,self.nowPrice,gameEnv.personStatus["B"])
+        observation_next, rewardB, done = self.step(actionB,"B")
+        if action == "丢_0": # 对手弃牌
+            reward = self.deskMoney - int(action.split("_")[1])
+        if done and rewardB == 0: # 对手开牌输了
+            reward = self.deskMoney - int(action.split("_")[1])
         return observation_next, reward, done
 
 
@@ -68,7 +67,6 @@ class GlodenFlower:
         doneFlag = False
         giveupFlag = False
         self.playSequence.append(str(playerI) + "_" + action)
-        observation = [copy.copy(self.playSequence),copy.copy(self.playerCards[playerI]),self.personMoney[playerI]]
 
         action_type,action_money = action.split("_")
         action_money = int(action_money)
@@ -103,8 +101,9 @@ class GlodenFlower:
             if self.nowPrice / 2.5 > self.personMoney[playerI]:
                 raise Exception("没钱了4 Invalid level!")
             else:
-                self.personMoney[playerI] -= self.nowPrice / 2.5
-                self.deskMoney += self.nowPrice / 2.5
+
+                self.personMoney[playerI] -= max(self.nowPrice / 2.5,1)
+                self.deskMoney += max(self.nowPrice / 2.5,1)
                 self.personStatus[playerI] = "开"
                 self.gameStauts = self.gameStatsMap["over"]
                 doneFlag = True
@@ -112,7 +111,7 @@ class GlodenFlower:
             doneFlag = True
             giveupFlag = True
         else:
-            raise Exception("异常操作！")
+            raise Exception("异常操作！",action)
 
         reward = -action_money
 
@@ -138,12 +137,12 @@ class GlodenFlower:
                 reward = self.deskMoney
         if giveupFlag:
             reward = 0
+        observation = [copy.copy(self.playSequence),copy.copy(self.playerCards["A"]),self.personMoney["A"]]
         return observation,reward,doneFlag
 
     def status_init(self):
         self.stepNum = 0
         self.nowPrice = 2
-        self.deskMoney = len(self.personMoney.keys())
         self.personStatus["A"] = "闷"
         self.personStatus["B"] = "闷"
         self.gameStauts = self.gameStatsMap["on"]
@@ -177,7 +176,7 @@ class GlodenFlower:
                 return self.scoreMap["同花顺"]
             else:
                 return self.scoreMap["金花"]
-        elif   v1 + 1 == v2 and  v2 + 1 == v3:
+        elif v1 + 1 == v2 and  v2 + 1 == v3:
             return self.scoreMap["顺子"]
         elif v1 == v2 or v1 == v3 or v2 == v3:
             return self.scoreMap["对子"]
@@ -205,7 +204,7 @@ class GlodenFlower:
         firstScoreA = self.score(cardsA)
         firstScoreB = self.score(cardsB)
 
-        if self.debug:print self.reverseScoreMap[firstScoreA],self.reverseScoreMap[firstScoreB]
+        if self.debug:print (self.reverseScoreMap[firstScoreA],self.reverseScoreMap[firstScoreB],self.playerCards["A"],self.playerCards["B"])
 
         vA = sorted([self.VMap[i.split("_")[1]] for i in cardsA],reverse=True)
         vB = sorted([self.VMap[i.split("_")[1]] for i in cardsB],reverse=True)
@@ -225,61 +224,71 @@ class GlodenFlower:
         for action in self.actionMoney.keys():
             action_type = action.split("_")[0]
             action_value = int(action.split("_")[1])
-            if action_type == "开" or action_type == "丢" :res.append(action)
-            if curStatus == "看" and action_type == "闷":continue
-            if curStatus == "看":
+            if curStatus == "看" and action_type == "开":
+                pass
+            elif curStatus == "闷" and action_type == "闷开":
+                pass
+            elif action_type == "丢":
+                pass
+            elif curStatus == "看" and action_type == "闷":continue
+            elif curStatus == "看" and action_type == "看":
                 if self.nowPrice > action_value:continue
-            elif curStatus == "闷":
-                res.append("闷开_1")
-                if self.nowPrice  > 2.5 * action_value: continue
-
+            elif curStatus == "闷" and action_type == "看":
+                if self.nowPrice  > action_value: continue
+            elif curStatus == "闷" and action_type == "闷":
+                if self.nowPrice > 2.5 * action_value: continue
+            else:
+                continue
             res.append(action)
         return res
 
 
+if __name__ == '__main__':
 
-gameEnv = GlodenFlower([2000,2000])
-memory = []
-for episode in range(3):
-    # 初始化环境
-    gameEnv.reset()
+    gameEnv = GlodenFlower([2000,2000])
+    memory = []
+    for episode in range(1000):
+        # 初始化环境
+        gameEnv.reset()
 
-    playerI = gameEnv.getStartTurn()
-    print playerI,"win last"
-    observation_this = []
-    if playerI == "B":
-        action = random.choice(gameEnv.chooseAvailbleAction(playerI))
-        print playerI, action, gameEnv.deskMoney, gameEnv.nowPrice
-        observation_next, reward, done = gameEnv.step(action, "B")
-        playerI = "A"
-        if done:
-            continue
+        playerI = gameEnv.getStartTurn()
+        print (playerI,"win last")
+        observation_this = [[],gameEnv.playerCards["A"],gameEnv.personMoney["A"]]
+        if playerI == "B":
+            action = random.choice(gameEnv.chooseAvailbleAction(playerI))
+            print (playerI, action, gameEnv.deskMoney, gameEnv.nowPrice)
+            observation_next, reward, done = gameEnv.step(action, "B")
+            playerI = "A"
+            if done:
+                continue
 
-    while True:
-        # DQN 根据观测值选择行为
-        # action = RL.choose_action(observation_this, playerI)
-        # 环境根据行为给出下一个 state, reward, 是否终止
-        action = random.choice(gameEnv.chooseAvailbleAction(playerI))
-        print playerI, action, gameEnv.deskMoney, gameEnv.nowPrice
-        observation_next, reward, done = gameEnv.stepA(action)
+        while True:
+            # DQN 根据观测值选择行为
+            # action = RL.choose_action(observation_this, playerI)
+            # 环境根据行为给出下一个 state, reward, 是否终止
+            action = random.choice(gameEnv.chooseAvailbleAction(playerI))
+            print (playerI, action, gameEnv.deskMoney, gameEnv.nowPrice,gameEnv.personStatus[playerI])
+            observation_next, reward, done = gameEnv.stepA(action)
 
 
-        # DQN 存储记忆
-        # RL.store_transition(observation, action, reward)
-        memory.append((observation_this, action, reward,observation_next))
+            # DQN 存储记忆
+            # RL.store_transition(observation, action, reward)
+            memory.append((observation_this, action, reward,done,observation_next))
 
-        # 控制学习起始时间和频率 (先累积一些记忆再开始学习)
-        # if (step > 200) and (step % 5 == 0):
-        #     RL.learn()
+            # 控制学习起始时间和频率 (先累积一些记忆再开始学习)
+            # if (step > 200) and (step % 5 == 0):
+            #     RL.learn()
 
-        # 将下一个 state_ 变为 下次循环的 state
-        observation_this = observation_next
+            # 将下一个 state_ 变为 下次循环的 state
+            observation_this = observation_next
 
-        # 如果终止, 就跳出循环
-        if done:
-            break
+            # 如果终止, 就跳出循环
+            if done:
+                break
 
-        # end of game
-print('game over')
-for i in memory:
-    print i[0],"\taction:",i[1],"\treward:",i[2],i[3]
+            # end of game
+    print('game over')
+    print (len(memory))
+    for i in memory:
+        print (i[0],"\taction:",i[1],"\treward:",i[2],i[3])
+
