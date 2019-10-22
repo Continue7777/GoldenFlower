@@ -110,7 +110,7 @@ class DQN:
         if action_index not in availble_actions:
             return random.choice(availble_actions)
         else:
-            if random.random() < self.explore_alpha:
+            if random.random() < 0.9 ** (self.step / 500):
                 return random.choice(availble_actions)
         return self.action_reverse_index_dicts[action_index[0]]
 
