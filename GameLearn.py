@@ -3,19 +3,21 @@ import random
 import numpy as np
 import DQN
 if __name__ == '__main__':
-    gameEnv = GameEnv.GlodenFlower([2000,2000])
+    gameEnv = GameEnv.GlodenFlower([20000,20000])
+    RLModel = DQN.DQN(embedding_size=10,sequence_length=20,learning_rate=0.0001,batch_size=500)
     gameEnv.debug = False
-    RLModel = DQN.DQN(embedding_size=10,sequence_length=20,learning_rate=0.01,batch_size=100)
     memory = []
-    for episode in range(1000):
+    for episode in range(100000):
         # 初始化环境
         gameEnv.reset()
 
         playerI = gameEnv.getStartTurn()
+        #print (playerI,"win last")
         observation_this = [[],gameEnv.playerCards["A"],gameEnv.personMoney["A"]]
         if playerI == "B":
             availble_actions = gameEnv.chooseAvailbleAction(playerI)
             action = RLModel.choose_action(np.array([observation_this]),availble_actions)
+            #print (playerI, action, gameEnv.deskMoney, gameEnv.nowPrice)
             observation_next, reward, done = gameEnv.step(action, "B")
             playerI = "A"
             if done:
@@ -26,6 +28,7 @@ if __name__ == '__main__':
             availble_actions = gameEnv.chooseAvailbleAction(playerI)
             action = RLModel.choose_action(np.array([observation_this]),availble_actions)
             # 环境根据行为给出下一个 state, reward, 是否终止
+            #print (playerI, action, gameEnv.deskMoney, gameEnv.nowPrice,gameEnv.personStatus[playerI])
             observation_next, reward, done = gameEnv.stepA(action,RLModel)
 
 
@@ -34,8 +37,7 @@ if __name__ == '__main__':
             RLModel.store_transition(observation_this, action, reward,done,observation_next)
 
             # 控制学习起始时间和频率 (先累积一些记忆再开始学习)
-            if (episode > 200) and (episode % 50 == 0):
-                print("train")
+            if (episode > 2000) and (episode % 10 == 0):
                 RLModel.train()
 
             # 将下一个 state_ 变为 下次循环的 state

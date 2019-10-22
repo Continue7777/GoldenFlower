@@ -1,7 +1,6 @@
-import GameEnv
-import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt # plt 用于显示图片
+pic = Image.open('249382611.jpg')
+plt.imshow(pic)
+plt.show()
 
-gameEnv = GameEnv.GlodenFlower([2000, 2000])
-memory = []
-l = [0] * -1
-print(l )

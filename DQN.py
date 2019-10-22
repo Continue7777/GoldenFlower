@@ -1,9 +1,10 @@
 import numpy as np
 import tensorflow as tf
 import random
+import codecs
 
 class DQN:
-    def __init__(self,embedding_size=10,sequence_length=20,learning_rate=0.01,batch_size=100): #初始化
+    def __init__(self,embedding_size=10,sequence_length=20,learning_rate=0.01,batch_size=1000): #初始化
         self.embedding_size = embedding_size
         self.card_layer_unit = 10
         self.sequence_length = sequence_length
@@ -37,6 +38,7 @@ class DQN:
         self.build_network()
         self.sess.run(tf.global_variables_initializer())
         self.memory = []
+        self.file = codecs.open("train_data.csv","w",encoding='utf-8')
 
     def get_weights(self,index_dicts, columns,embedding_size):
         res = {}
@@ -147,13 +149,14 @@ class DQN:
         _, global_step,loss = self.sess.run([self.train_op, self.global_steps, self.loss], feed_dict=feed_dict)
         self.step = global_step
         if global_step % 100 == 0:
-            print(global_step,loss)
+            print("loss",global_step,loss)
 
     # def save_model(self): #保存模型
     # def restore(self): #加载模型
     def store_transition(self,observation_this, action, reward,done,observation_next): #DQN存储记忆
         if len(observation_this[0]) < self.sequence_length:
             self.memory.append([observation_this,action,reward,done,observation_next])
+            self.file.write(str(observation_this) + "\t" + action + "\t" + str(reward) + "\t" + str(done) + "\t" + str(observation_next) + "\n")
             if len(self.memory) > 10**7:
                 self.memory = self.memory[:10*5]
 
