@@ -142,9 +142,9 @@ class GlodenFlower:
             elif AWin == False and playerI == "B":
                 reward = self.personPayed["A"]
         if self.personStatus["A"] == "闷":
-            observation = [copy.copy(self.playSequence),copy.copy(self.playerCards["A"]),self.personMoney["A"]]
+            observation = [copy.copy(self.playSequence), [" ", " ", " "], self.personMoney["A"]]
         else:
-            observation = [copy.copy(self.playSequence), [" "," "," "], self.personMoney["A"]]
+            observation = [copy.copy(self.playSequence),copy.copy(self.playerCards["A"]),self.personMoney["A"]]
         return observation,reward,doneFlag
 
     def status_init(self):
@@ -262,10 +262,13 @@ if __name__ == '__main__':
 
         playerI = gameEnv.getStartTurn()
         print (playerI,"win last")
-        observation_this = [[],gameEnv.playerCards["A"],gameEnv.personMoney["A"]]
+        if gameEnv.personStatus["A"] == "闷":
+            observation_this = [[],[" "," "," "],gameEnv.personMoney["A"]]
+        else:
+            observation_this = [[], gameEnv.playerCards["A"], gameEnv.personMoney["A"]]
         if playerI == "B":
             action = random.choice(gameEnv.chooseAvailbleAction(playerI))
-            print ("player:%s ,action:%s A_pay:%s B_pay:%s nowPrice:%s" % (playerI, action, gameEnv.personPayed["A"] ,gameEnv.personPayed["B"], gameEnv.nowPrice))
+            print ("player:%s ,action:%s A_pay:%s B_pay:%s nowPrice:%s A status:%s" % (playerI, action, gameEnv.personPayed["A"] ,gameEnv.personPayed["B"], gameEnv.nowPrice,gameEnv.personStatus["A"]))
             observation_next, reward, done = gameEnv.step(action, "B")
             playerI = "A"
             if done:
@@ -277,7 +280,7 @@ if __name__ == '__main__':
             # 环境根据行为给出下一个 state, reward, 是否终止
             actions = gameEnv.chooseAvailbleAction(playerI)
             action = random.choice(actions)
-            print ("player:%s ,action:%s A_pay:%s B_pay:%s nowPrice:%s" % (playerI, action, gameEnv.personPayed["A"] ,gameEnv.personPayed["B"], gameEnv.nowPrice))
+            print ("player:%s ,action:%s A_pay:%s B_pay:%s nowPrice:%s A status:%s" % (playerI, action, gameEnv.personPayed["A"] ,gameEnv.personPayed["B"], gameEnv.nowPrice,gameEnv.personStatus["A"]))
             observation_next, reward, done = gameEnv.stepA(action,None)
 
 
