@@ -106,6 +106,12 @@ class DQN:
         _feed_dict[self.actionInput] = np.array(self.actions_index_dicts[action])
         return self.sess.run(self.action_predictions,feed_dict=self._feed_dict(status))
 
+    def get_action_prob(self,status):
+        _feed_dict = self._feed_dict(status)
+        prob = self.sess.run(self.predictions, feed_dict=_feed_dict)
+        res_dict = {k+self.action_reverse_index_dicts[k]:v for k,v in zip(self.action_reverse_index_dicts.keys(),prob[0])}
+        return res_dict
+
     def choose_action(self,status,availble_actions): #通过训练好的网络，根据状态获取动作
         action_index = self.get_max_action(status)
         if action_index not in availble_actions:
