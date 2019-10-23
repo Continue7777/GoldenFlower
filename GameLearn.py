@@ -14,7 +14,7 @@ if __name__ == '__main__':
 
         playerI = gameEnv.getStartTurn()
         #print (playerI,"win last")
-        if gameEnv.personPayed["A"] != "闷":
+        if gameEnv.personStatus["A"] != "闷":
             observation_this = [[],gameEnv.playerCards["A"],gameEnv.personMoney["A"]]
         else:
             observation_this = [[], [" "," "," "], gameEnv.personMoney["A"]]
