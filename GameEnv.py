@@ -21,10 +21,10 @@ class GlodenFlower:
 
         # 每步参数
         self.whoWinLast = "A"
-        self.deskMoney = 0
         self.nowPrice = 0
         self.gameStauts = self.gameStatsMap["on"]
         self.whosTurn = "A"
+        self.personPayed = {"A":0,"B":0}
         self.personStatus = {"A":"闷","B":"闷"}
         self.playSequence = []
 
@@ -45,7 +45,8 @@ class GlodenFlower:
         # 下底
         for playerI in self.personMoney.keys():
             self.personMoney[playerI] -= 1
-        self.deskMoney = len(self.personMoney.keys())
+        self.personPayed["A"] = 1
+        self.personPayed["B"] = 1
 
 
 
@@ -58,12 +59,12 @@ class GlodenFlower:
             actionB = RLModel.choose_action(np.array([observation_next]),availble_actions)
         else:
             actionB = random.choice(self.chooseAvailbleAction("B"))
-        if self.debug:print ("B",actionB,self.deskMoney,self.nowPrice,self.personStatus["B"])
+        if self.debug:print ("player:%s ,action:%s A_pay:%s B_pay:%s nowPrice:%s" % ("B", actionB, gameEnv.personPayed["A"] ,gameEnv.personPayed["B"], gameEnv.nowPrice))
         observation_next, rewardB, done = self.step(actionB,"B")
         if action == "丢_0": # 对手弃牌
-            reward = self.deskMoney - int(action.split("_")[1])
+            reward = self.personPayed["B"]
         if done and rewardB == 0: # 对手开牌输了
-            reward = self.deskMoney - int(action.split("_")[1])
+            reward = self.personPayed["B"]
         return observation_next, reward, done
 
 
@@ -80,7 +81,7 @@ class GlodenFlower:
                 raise Exception("没钱了1 Invalid !")
             else:
                 self.personMoney[playerI] -= action_money
-                self.deskMoney += action_money
+                self.personPayed[playerI] += action_money
                 self.personStatus[playerI] = "看"
                 self.nowPrice = action_money
         elif action_type == "闷" and self.nowPrice <= action_money * 2.5:
@@ -90,7 +91,7 @@ class GlodenFlower:
                 raise Exception("没钱了2 Invalid level!")
             else:
                 self.personMoney[playerI] -= action_money
-                self.deskMoney += action_money
+                self.personPayed[playerI] += action_money
                 self.personStatus[playerI] = "闷"
                 self.nowPrice = action_money * 2.5
         elif action_type == "开":
@@ -98,7 +99,7 @@ class GlodenFlower:
                 raise Exception("没钱了3 Invalid level!")
             else:
                 self.personMoney[playerI] -= self.nowPrice
-                self.deskMoney += self.nowPrice
+                self.personPayed[playerI] += self.nowPrice
                 self.personStatus[playerI] = "开"
                 self.gameStauts = self.gameStatsMap["over"]
                 doneFlag = True
@@ -108,7 +109,7 @@ class GlodenFlower:
             else:
 
                 self.personMoney[playerI] -= max(self.nowPrice / 2.5,1)
-                self.deskMoney += max(self.nowPrice / 2.5,1)
+                self.personPayed[playerI] += max(self.nowPrice / 2.5,1)
                 self.personStatus[playerI] = "开"
                 self.gameStauts = self.gameStatsMap["over"]
                 doneFlag = True
@@ -118,8 +119,7 @@ class GlodenFlower:
         else:
             raise Exception("异常操作！",action)
 
-        reward = -action_money
-
+        reward = 0
         if doneFlag:
             AWin = self.compare(self.playerCards["A"], self.playerCards["B"])
             if playerI == "A" and action_type == "丢":
@@ -128,21 +128,22 @@ class GlodenFlower:
                 AWin = True
             if AWin:
                 self.whoWinLast = "A"
-                self.personMoney["A"] += self.deskMoney
+                self.personMoney["A"] += (self.personPayed['A'] + self.personPayed["B"])
             else:
                 self.whoWinLast = "B"
-                self.personMoney["B"] += self.deskMoney
+                self.personMoney["B"] += (self.personPayed['A'] + self.personPayed["B"])
             if AWin and playerI == "A":
-                reward = self.deskMoney
+                reward = self.personPayed["B"]
             elif AWin == False and playerI == "A":
-                reward = 0
+                reward = -self.personPayed["A"]
             elif AWin and playerI == "B":
-                reward = 0
+                reward = -self.personPayed["B"]
             elif AWin == False and playerI == "B":
-                reward = self.deskMoney
-        if giveupFlag:
-            reward = 0
-        observation = [copy.copy(self.playSequence),copy.copy(self.playerCards["A"]),self.personMoney["A"]]
+                reward = self.personPayed["A"]
+        if self.personStatus["A"] == "闷":
+            observation = [copy.copy(self.playSequence),copy.copy(self.playerCards["A"]),self.personMoney["A"]]
+        else:
+            observation = [copy.copy(self.playSequence), [" "," "," "], self.personMoney["A"]]
         return observation,reward,doneFlag
 
     def status_init(self):
@@ -151,6 +152,8 @@ class GlodenFlower:
         self.personStatus["A"] = "闷"
         self.personStatus["B"] = "闷"
         self.gameStauts = self.gameStatsMap["on"]
+        self.personPayed["A"] = 0
+        self.personPayed["B"] = 0
         self.playSequence = []
 
     def deal(self,n=2):
@@ -261,7 +264,7 @@ if __name__ == '__main__':
         observation_this = [[],gameEnv.playerCards["A"],gameEnv.personMoney["A"]]
         if playerI == "B":
             action = random.choice(gameEnv.chooseAvailbleAction(playerI))
-            print (playerI, action, gameEnv.deskMoney, gameEnv.nowPrice)
+            print ("player:%s ,action:%s A_pay:%s B_pay:%s nowPrice:%s" % (playerI, action, gameEnv.personPayed["A"] ,gameEnv.personPayed["B"], gameEnv.nowPrice))
             observation_next, reward, done = gameEnv.step(action, "B")
             playerI = "A"
             if done:
@@ -271,8 +274,9 @@ if __name__ == '__main__':
             # DQN 根据观测值选择行为
             # action = RL.choose_action(observation_this, playerI)
             # 环境根据行为给出下一个 state, reward, 是否终止
-            action = random.choice(gameEnv.chooseAvailbleAction(playerI))
-            print (playerI, action, gameEnv.deskMoney, gameEnv.nowPrice,gameEnv.personStatus[playerI])
+            actions = gameEnv.chooseAvailbleAction(playerI)
+            action = random.choice(actions)
+            print ("player:%s ,action:%s A_pay:%s B_pay:%s nowPrice:%s" % (playerI, action, gameEnv.personPayed["A"] ,gameEnv.personPayed["B"], gameEnv.nowPrice))
             observation_next, reward, done = gameEnv.stepA(action,None)
 
 

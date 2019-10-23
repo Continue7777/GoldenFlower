@@ -1,3 +1,4 @@
+#-*- coding:utf-8
 import numpy as np
 import tensorflow as tf
 import random
@@ -32,7 +33,7 @@ class DQN:
                             'club_K': 38,
                             'diamond_1': 39, 'diamond_2': 40, 'diamond_3': 41, 'diamond_4': 42, 'diamond_5': 43,
                             'diamond_6': 44, 'diamond_7': 45, 'diamond_8': 46, 'diamond_9': 47, 'diamond_10': 48,
-                            'diamond_J': 49, 'diamond_Q': 50, 'diamond_K': 51}
+                            'diamond_J': 49, 'diamond_Q': 50, 'diamond_K': 51," ":52}
 
         self.sess = tf.Session()
         self.build_network()
