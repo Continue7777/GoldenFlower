@@ -141,10 +141,8 @@ class GlodenFlower:
                 reward = -self.personPayed["B"]
             elif AWin == False and playerI == "B":
                 reward = self.personPayed["A"]
-        if self.personStatus["A"] == "闷":
-            observation = [copy.copy(self.playSequence), [" ", " ", " "], self.personMoney["A"]]
-        else:
-            observation = [copy.copy(self.playSequence),copy.copy(self.playerCards["A"]),self.personMoney["A"]]
+
+        observation = [copy.copy(self.playSequence),copy.copy(self.playerCards["A"]),self.personStatus["A"]]
         return observation,reward,doneFlag
 
     def status_init(self):
@@ -262,10 +260,7 @@ if __name__ == '__main__':
 
         playerI = gameEnv.getStartTurn()
         print (playerI,"win last")
-        if gameEnv.personStatus["A"] == "闷":
-            observation_this = [[],[" "," "," "],gameEnv.personMoney["A"]]
-        else:
-            observation_this = [[], gameEnv.playerCards["A"], gameEnv.personMoney["A"]]
+        observation_this = [[], gameEnv.playerCards["A"], gameEnv.personStatus["A"]]
         if playerI == "B":
             action = random.choice(gameEnv.chooseAvailbleAction(playerI))
             print ("player:%s ,action:%s A_pay:%s B_pay:%s nowPrice:%s A status:%s" % (playerI, action, gameEnv.personPayed["A"] ,gameEnv.personPayed["B"], gameEnv.nowPrice,gameEnv.personStatus["A"]))

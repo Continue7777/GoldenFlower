@@ -18,6 +18,11 @@ class DQN:
         self.actions_index_dicts = {"闷_2": 0, "闷_4": 1, "闷_8": 2, "看_2": 3, "看_5": 4, "看_10": 5, "看_20": 6, "闷开_0": 7,
                                "开_0": 8, "丢_0": 9}
         self.action_reverse_index_dicts = {v: k for k, v in self.actions_index_dicts.items()}
+
+        self.action_notsee_index_dicts = {"闷_2": 0, "闷_4": 1, "闷_8": 2, "闷开_0": 3 , "看" : 4}
+        self.action_see_index_dicts = {"看_2": 0, "看_5": 1, "看_10": 2, "看_20": 3, "开_0": 4, "丢_0": 5}
+        self.action_see_reverse_index_dicts = {v: k for k, v in self.action_see_index_dicts.items()}
+        self.action_notsee_reverse_index_dicts = {v: k for k, v in self.action_notsee_index_dicts.items()}
         self.seq_action_index_dicts = {"A_闷_2": 0, "A_闷_4": 1, "A_闷_8": 2, "A_闷开_0": 3, "A_看_2": 4, "A_看_5": 5, "A_看_10": 6,
                                   "A_看_20": 7, "A_开_0": 8, "A_丢_0": 9,
                                   "B_闷_2": 10, "B_闷_4": 11, "B_闷_8": 12, "B_闷开_0": 13, "B_看_2": 14, "B_看_5": 15,
@@ -53,10 +58,12 @@ class DQN:
 
         self.global_steps = tf.Variable(0, trainable=False)
         self.playSequenceInput = tf.placeholder(shape=[None,self.sequence_length],dtype=tf.int32,name="playSequenceInput")
+        self.personStatusInput = tf.placeholder(shape=[None,],dtype=tf.int32,name="personStatusInput") # 1:闷  0:看
         self.playSequenceLengthInput = tf.placeholder(shape=[None],dtype=tf.int32,name="playSequenceLengthInput")
         self.playCardsInput = tf.placeholder(shape=[None,3],dtype=tf.int32,name="playCardsInput")
         self.actionInput = tf.placeholder(shape=[None,1],dtype=tf.int32,name="actionInput")
         self.yInput = tf.placeholder(shape=[None,1],dtype=tf.float32,name="yInput")
+        self.mask = tf.constant([[0,0,0,0,1,1,1,1,1,1],[1, 1, 1, 1, 0, 0, 0, 0, 0, 0]],dtype=tf.float32)
 
         self.playSequenceEmb   = tf.nn.embedding_lookup(weights['seq_action_emb'], self.playSequenceInput) # bs * seq * emb
         self.playCardsEmb = tf.reshape(tf.nn.embedding_lookup(weights['card_emb'], self.playCardsInput),[-1, 3 * self.embedding_size]) # bs, 3 * emb
@@ -71,12 +78,23 @@ class DQN:
 
         card_layer = tf.layers.dense(self.playCardsEmb, self.card_layer_unit,activation=tf.nn.leaky_relu)
 
-        self.predictions = tf.layers.dense(tf.concat([output_fw[:,-1,:], card_layer],1), len(self.actions_index_dicts))
+        self.predictionActionStatus = tf.layers.dense(tf.nn.relu(tf.layers.dense(card_layer,10)),2)
+
+        self.predictionsNotSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(output_fw[:,-1,:], 10)),len(self.action_notsee_index_dicts)) # bs,notsee + 1
+        self.predictionsSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(tf.concat([output_fw[:, -1, :], card_layer], 1), 10)),len(self.action_see_index_dicts)) # bs,see
+        self.prediction = tf.concat([self.predictionsNotSee[:,:-1],self.predictionsSee],1) # bs see+not_see
+        self.maskOutput = tf.gather(self.mask,self.personStatusInput * tf.cast(~tf.equal(tf.arg_max(self.predictionsNotSee,1),len(self.action_notsee_index_dicts)),dtype=tf.int32))
+        # 看 看 看 0
+        # 看 闷 看 0
+        # 闷 看 看 0
+        # 闷 闷 闷 1
+        self.predictions = self.prediction * self.maskOutput
+
         self.predictionsMaxQValue = tf.reduce_max(self.predictions)
         self.predictionsMaxQAction = tf.arg_max(self.predictions,1)
 
         # Get the predictions for the chosen actions only
-        gather_indices = tf.range(self.batch_size) * len(self.actions_index_dicts) + self.actionInput
+        gather_indices = tf.range(self.batch_size) * (len(self.action_see_index_dicts) + len(self.action_notsee_index_dicts) - 1)  + self.actionInput
         self.action_predictions = tf.gather(tf.reshape(self.predictions, [-1]), gather_indices)
 
         # Calculate the loss
@@ -88,12 +106,16 @@ class DQN:
         self.train_op = self.optimizer.minimize(self.loss, global_step=self.global_steps)
 
     def _feed_dict(self,status):
+        statusMap = {"闷":1,"看":0,"开":0}
         playSequenceStr = status[:,0]
         playCardStr = status[:,1]
+        personStatus = status[:,2]
+        personIndex = [statusMap[i] for i in personStatus]
         playSequenceIndex = [[self.seq_action_index_dicts[i] for i in j][:20] + [len(self.seq_action_index_dicts)] * (len(self.seq_action_index_dicts) - len(j)) for j in playSequenceStr]
         playSequenceLength = [len(i)+1 for i in playSequenceStr]
         playCardIndex = [[self.card_index_dicts[i] for i in j] for j in playCardStr]
-        return {self.playSequenceInput: np.array(playSequenceIndex), self.playCardsInput: np.array(playCardIndex),self.playSequenceLengthInput: np.array(playSequenceLength)}
+        return {self.playSequenceInput: np.array(playSequenceIndex), self.playCardsInput: np.array(playCardIndex),self.playSequenceLengthInput: np.array(playSequenceLength),
+                self.personStatusInput:np.array(personIndex)}
 
     def get_max_Q(self,status):
         return self.sess.run(self.predictionsMaxQValue,feed_dict=self._feed_dict(status))
@@ -134,10 +156,13 @@ class DQN:
         train_done = train_data[:,3]
         train_observation_next = train_data[:,4]
 
+        statusMap = {"闷":1,"看":0,"开":0}
         playSequenceStr = [i[0] for i in train_observation_this]
         playCardStr =  [i[1] for i in train_observation_this]
+        personStatus = [i[2] for i in train_observation_this]
         playSequenceIndex = [[self.seq_action_index_dicts[i] for i in j] + [len(self.seq_action_index_dicts)] * (len(self.seq_action_index_dicts) - len(j)) for j in playSequenceStr]
         playSequenceLength = [len(i)+1 for i in playSequenceStr]
+        personIndex = [statusMap[i] for i in personStatus]
         playCardIndex = [[self.card_index_dicts[i] for i in j] for j in playCardStr]
         actionIndex = [self.actions_index_dicts[i] for i in  train_action]
 
@@ -152,7 +177,7 @@ class DQN:
 
         feed_dict = {self.playSequenceInput:np.array(playSequenceIndex),self.playCardsInput:np.array(playCardIndex),
                      self.actionInput:np.array(actionIndex).reshape(self.batch_size,-1),self.playSequenceLengthInput:np.array(playSequenceLength),
-                     self.yInput:np.array(y).reshape(self.batch_size,-1)}
+                     self.yInput:np.array(y).reshape(self.batch_size,-1),self.personStatusInput:np.array(personIndex)}
         _, global_step,loss = self.sess.run([self.train_op, self.global_steps, self.loss], feed_dict=feed_dict)
         self.step = global_step
         if global_step % 100 == 0:
