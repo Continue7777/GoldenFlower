@@ -53,6 +53,17 @@ class DQN:
                                                name=column + "_emb")
         return res
 
+    def collect_final_step_of_lstm(self,lstm_representation, lengths):
+        # lstm_representation: [batch_size, passsage_length, dim]
+        # lengths: [batch_size]
+        lengths = tf.maximum(lengths, tf.zeros_like(lengths, dtype=tf.int32))
+
+        batch_size = tf.shape(lengths)[0]
+        batch_nums = tf.range(0, limit=batch_size)  # shape (batch_size)
+        indices = tf.stack((batch_nums, lengths), axis=1)  # shape (batch_size, 2)
+        result = tf.gather_nd(lstm_representation, indices, name='last-forwar-lstm')
+        return result  # [batch_size, dim]
+
     def build_network(self): #构建网络模型
         self.weights = self.get_weights([self.seq_action_index_dicts,self.card_index_dicts],["seq_action","card"],self.embedding_size)
 
@@ -74,6 +85,7 @@ class DQN:
             cell_fw=cell, cell_bw=cell, dtype=tf.float32, sequence_length=self.playSequenceLengthInput, inputs=self.playSequenceEmb
         )
         self.output_fw, self.output_bw = outputs
+        self.last_output = self.collect_final_step_of_lstm(self.output_fw,self.playSequenceLengthInput)
         states_fw, states_bw = states
 
         card_layer = tf.layers.dense(self.playCardsEmb, self.card_layer_unit,activation=tf.nn.leaky_relu)
