@@ -85,7 +85,7 @@ class DQN:
             cell_fw=cell, cell_bw=cell, dtype=tf.float32, sequence_length=self.playSequenceLengthInput, inputs=self.playSequenceEmb
         )
         self.output_fw, self.output_bw = outputs
-        self.last_output = self.collect_final_step_of_lstm(self.output_fw,self.playSequenceLengthInput)
+        self.last_output = self.collect_final_step_of_lstm(self.output_fw,self.playSequenceLengthInput-1)
         states_fw, states_bw = states
 
         card_layer = tf.layers.dense(self.playCardsEmb, self.card_layer_unit,activation=tf.nn.leaky_relu)
