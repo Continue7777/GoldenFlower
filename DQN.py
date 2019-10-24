@@ -54,7 +54,7 @@ class DQN:
         return res
 
     def build_network(self): #构建网络模型
-        weights = self.get_weights([self.seq_action_index_dicts,self.card_index_dicts],["seq_action","card"],self.embedding_size)
+        self.weights = self.get_weights([self.seq_action_index_dicts,self.card_index_dicts],["seq_action","card"],self.embedding_size)
 
         self.global_steps = tf.Variable(0, trainable=False)
         self.playSequenceInput = tf.placeholder(shape=[None,self.sequence_length],dtype=tf.int32,name="playSequenceInput")
@@ -65,23 +65,21 @@ class DQN:
         self.yInput = tf.placeholder(shape=[None,1],dtype=tf.float32,name="yInput")
         self.mask = tf.constant([[0,0,0,0,1,1,1,1,1,1],[1, 1, 1, 1, 0, 0, 0, 0, 0, 0]],dtype=tf.float32)
 
-        self.playSequenceEmb   = tf.nn.embedding_lookup(weights['seq_action_emb'], self.playSequenceInput) # bs * seq * emb
-        self.playCardsEmb = tf.reshape(tf.nn.embedding_lookup(weights['card_emb'], self.playCardsInput),[-1, 3 * self.embedding_size]) # bs, 3 * emb
+        self.playSequenceEmb   = tf.nn.embedding_lookup(self.weights['seq_action_emb'], self.playSequenceInput) # bs * seq * emb
+        self.playCardsEmb = tf.reshape(tf.nn.embedding_lookup(self.weights['card_emb'], self.playCardsInput),[-1, 3 * self.embedding_size]) # bs, 3 * emb
 
         cell = tf.nn.rnn_cell.LSTMCell(num_units=10, state_is_tuple=True)
 
         outputs, states = tf.nn.bidirectional_dynamic_rnn(
             cell_fw=cell, cell_bw=cell, dtype=tf.float32, sequence_length=self.playSequenceLengthInput, inputs=self.playSequenceEmb
         )
-        output_fw, output_bw = outputs
+        self.output_fw, self.output_bw = outputs
         states_fw, states_bw = states
 
         card_layer = tf.layers.dense(self.playCardsEmb, self.card_layer_unit,activation=tf.nn.leaky_relu)
 
-        self.predictionActionStatus = tf.layers.dense(tf.nn.relu(tf.layers.dense(card_layer,10)),2)
-
-        self.predictionsNotSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(output_fw[:,-1,:], 10)),len(self.action_notsee_index_dicts)) # bs,notsee + 1
-        self.predictionsSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(tf.concat([output_fw[:, -1, :], card_layer], 1), 10)),len(self.action_see_index_dicts)) # bs,see
+        self.predictionsNotSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(self.output_fw[:,-1,:], 10)),len(self.action_notsee_index_dicts)) # bs,notsee + 1
+        self.predictionsSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(tf.concat([self.output_fw[:, -1, :], card_layer], 1), 10)),len(self.action_see_index_dicts)) # bs,see
         self.prediction = tf.concat([self.predictionsNotSee[:,:-1],self.predictionsSee],1) # bs see+not_see
         self.maskOutput = tf.gather(self.mask,self.personStatusInput * tf.cast(~tf.equal(tf.arg_max(self.predictionsNotSee,1),len(self.action_notsee_index_dicts)),dtype=tf.int32))
         # 看 看 看 0
