@@ -15,7 +15,7 @@ class DQN:
         self.step = 0
         self.explore_alpha = 0.9 ** (self.step / 1000)
 
-        self.actions_index_dicts = {"闷_2": 0, "闷_4": 1, "闷_8": 2, "看_2": 3, "看_5": 4, "看_10": 5, "看_20": 6, "闷开_0": 7,
+        self.actions_index_dicts = {"闷_2": 0, "闷_4": 1, "闷_8": 2, "闷开_0":3,"看_2": 4, "看_5": 5, "看_10": 6, "看_20": 7,
                                "开_0": 8, "丢_0": 9}
         self.action_reverse_index_dicts = {v: k for k, v in self.actions_index_dicts.items()}
 
