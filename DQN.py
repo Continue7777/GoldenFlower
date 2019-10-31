@@ -4,6 +4,9 @@ import tensorflow as tf
 import random
 import codecs
 
+from Game import GlodenFlower
+
+
 class DQN:
     def __init__(self,embedding_size=10,sequence_length=20,learning_rate=0.01,batch_size=1000): #初始化
         self.embedding_size = embedding_size
@@ -45,6 +48,7 @@ class DQN:
         self.sess.run(tf.global_variables_initializer())
         self.memory = []
         self.file = codecs.open("train_data.csv","w",encoding='utf-8')
+        self.gameEnv = GlodenFlower([2000,2000])
 
     def get_weights(self,index_dicts, columns,embedding_size):
         res = {}
@@ -133,6 +137,10 @@ class DQN:
     def get_max_action(self,status):
         return self.sess.run(self.predictionsMaxQAction,feed_dict=self._feed_dict(status))
 
+    def get_max_availble_action(self,status):
+        probs = self.sess.run(self.predictions, feed_dict=self._feed_dict(status))
+        return
+
     def get_action_Q(self,status,action): #通过训练好的网络，根据状态获取动作
         _feed_dict = self._feed_dict(status)
         _feed_dict[self.actionInput] = np.array(self.actions_index_dicts[action])
@@ -153,13 +161,14 @@ class DQN:
                 return random.choice(availble_actions)
         return self.action_reverse_index_dicts[action_index[0]]
 
-    def train(self): #训练
+    def train(self,train_data): #训练
         """
         memeory:[[ob_this,action,reward,done,ob_next],[ob_this...]]
         ob_this:[(seq,card,money),()]
         :return:
         """
-        train_data = self.experience_replay()
+        if train_data == None:
+            train_data = self.experience_replay()
         train_observation_this = train_data[:,0]
         train_action =  train_data[:,1]
         train_reward = train_data[:,2]
@@ -204,3 +213,8 @@ class DQN:
 
     def experience_replay(self): #记忆回放
         return np.array(random.sample(self.memory, self.batch_size))
+
+    def exerience_replay_final_step(self):
+        data = self.memory
+        data = data[data[:, 2] != 0]
+        return np.array(random.sample(data, self.batch_size))
