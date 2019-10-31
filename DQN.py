@@ -4,7 +4,7 @@ import tensorflow as tf
 import random
 import codecs
 
-from Game import GlodenFlower
+from GameEnv import GlodenFlower
 
 
 class DQN:
