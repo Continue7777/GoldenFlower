@@ -167,7 +167,7 @@ class DQN:
         ob_this:[(seq,card,money),()]
         :return:
         """
-        if train_data == None:
+        if train_data is None:
             train_data = self.experience_replay()
         train_observation_this = train_data[:,0]
         train_action =  train_data[:,1]
