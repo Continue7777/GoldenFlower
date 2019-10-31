@@ -76,7 +76,7 @@ class DQN:
         self.personStatusInput = tf.placeholder(shape=[None,],dtype=tf.int32,name="personStatusInput") # 1:闷  0:看
         self.playSequenceLengthInput = tf.placeholder(shape=[None],dtype=tf.int32,name="playSequenceLengthInput")
         self.playCardsInput = tf.placeholder(shape=[None,3],dtype=tf.int32,name="playCardsInput")
-        self.actionInput = tf.placeholder(shape=[None,len(self.actions_index_dicts)],dtype=tf.int32,name="actionInput")
+        self.actionInput = tf.placeholder(shape=[None,len(self.actions_index_dicts)],dtype=tf.float32,name="actionInput")
         self.yInput = tf.placeholder(shape=[None,1],dtype=tf.float32,name="yInput")
         self.mask = tf.constant([[0,0,0,0,1,1,1,1,1,1],[1, 1, 1, 1, 0, 0, 0, 0, 0, 0]],dtype=tf.float32)
 
