@@ -205,7 +205,7 @@ class DQN:
 
         feed_dict = {self.playSequenceInput:np.array(playSequenceIndex),self.playCardsInput:np.array(playCardIndex),
                      self.actionInput:self._one_hot(actionIndex),self.playSequenceLengthInput:np.array(playSequenceLength),
-                     self.yInput:np.array(y).reshape(self.batch_size,-1),self.personStatusInput:np.array(personIndex)}
+                     self.yInput:np.array(y),self.personStatusInput:np.array(personIndex)}
         _, global_step,loss = self.sess.run([self.train_op, self.global_steps, self.loss], feed_dict=feed_dict)
         self.step = global_step
         if global_step % 100 == 0:
