@@ -76,7 +76,7 @@ class DQN:
         self.personStatusInput = tf.placeholder(shape=[None,],dtype=tf.int32,name="personStatusInput") # 1:闷  0:看
         self.playSequenceLengthInput = tf.placeholder(shape=[None],dtype=tf.int32,name="playSequenceLengthInput")
         self.playCardsInput = tf.placeholder(shape=[None,3],dtype=tf.int32,name="playCardsInput")
-        self.actionInput = tf.placeholder(shape=[None,1],dtype=tf.int32,name="actionInput")
+        self.actionInput = tf.placeholder(shape=[None,len(self.actions_index_dicts)],dtype=tf.int32,name="actionInput")
         self.yInput = tf.placeholder(shape=[None,1],dtype=tf.float32,name="yInput")
         self.mask = tf.constant([[0,0,0,0,1,1,1,1,1,1],[1, 1, 1, 1, 0, 0, 0, 0, 0, 0]],dtype=tf.float32)
 
@@ -112,8 +112,8 @@ class DQN:
         self.predictionsMaxQAction = tf.arg_max(self.predictions,1)
 
         # Get the predictions for the chosen actions only
-        gather_indices = tf.range(self.batch_size) * (len(self.action_see_index_dicts) + len(self.action_notsee_index_dicts) - 1)  + self.actionInput
-        self.action_predictions = tf.gather(tf.reshape(self.predictions, [-1]), gather_indices)
+
+        self.action_predictions =  tf.reduce_sum(tf.multiply(self.predictions, self.actionInput), reduction_indices=1)
 
         # Calculate the loss
         self.losses = tf.squared_difference(self.yInput, self.action_predictions)
@@ -147,7 +147,7 @@ class DQN:
 
     def get_action_Q(self,status,action): #通过训练好的网络，根据状态获取动作
         _feed_dict = self._feed_dict(status)
-        _feed_dict[self.actionInput] = np.array(self.actions_index_dicts[action])
+        _feed_dict[self.actionInput] = self._one_hot([self.actions_index_dicts[action]])
         return self.sess.run(self.action_predictions,feed_dict=self._feed_dict(status))
 
     def get_action_prob(self,status):
@@ -164,6 +164,11 @@ class DQN:
             if random.random() < 0.9 ** (self.step / 500):
                 return random.choice(availble_actions)
         return self.action_reverse_index_dicts[action_index[0]]
+
+    def _one_hot(self,x):
+        res = np.zeros((len(x), 10))
+        res[[i for i in range(len(x))], x] = 1
+        return res
 
     def train(self,train_data): #训练
         """
@@ -199,7 +204,7 @@ class DQN:
                 y.append(train_reward[i] + self.sigema * maxQNext[i])
 
         feed_dict = {self.playSequenceInput:np.array(playSequenceIndex),self.playCardsInput:np.array(playCardIndex),
-                     self.actionInput:np.array(actionIndex).reshape(self.batch_size,-1),self.playSequenceLengthInput:np.array(playSequenceLength),
+                     self.actionInput:self._one_hot(actionIndex),self.playSequenceLengthInput:np.array(playSequenceLength),
                      self.yInput:np.array(y).reshape(self.batch_size,-1),self.personStatusInput:np.array(personIndex)}
         _, global_step,loss = self.sess.run([self.train_op, self.global_steps, self.loss], feed_dict=feed_dict)
         self.step = global_step
