@@ -215,6 +215,6 @@ class DQN:
         return np.array(random.sample(self.memory, self.batch_size))
 
     def exerience_replay_final_step(self):
-        data = self.memory
+        data = np.array(self.memory)
         data = data[data[:, 2] != 0]
         return np.array(random.sample(data, self.batch_size))
