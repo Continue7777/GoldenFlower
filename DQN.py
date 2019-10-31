@@ -10,7 +10,7 @@ from GameEnv import GlodenFlower
 class DQN:
     def __init__(self,embedding_size=10,sequence_length=20,learning_rate=0.01,batch_size=1000): #初始化
         self.embedding_size = embedding_size
-        self.card_layer_unit = 10
+        self.card_layer_unit = 20
         self.sequence_length = sequence_length
         self.learning_rate = learning_rate
         self.batch_size = batch_size
@@ -92,7 +92,11 @@ class DQN:
         self.last_output = self.collect_final_step_of_lstm(self.output_fw,self.playSequenceLengthInput-1)
         states_fw, states_bw = states
 
-        card_layer = tf.layers.dense(self.playCardsEmb, self.card_layer_unit,activation=tf.nn.leaky_relu)
+        card_layer1 = tf.layers.dense(self.playCardsEmb, self.card_layer_unit, activation=tf.nn.leaky_relu)
+        card_layer2 = tf.layers.dense(card_layer1, int(self.card_layer_unit / 2), activation=tf.nn.leaky_relu)
+        card_layer = tf.layers.dense(card_layer2, int(self.card_layer_unit / 3),activation=tf.nn.leaky_relu)
+
+
 
         self.predictionsNotSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(self.last_output, 10)),len(self.action_notsee_index_dicts)) # bs,notsee + 1
         self.predictionsSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(tf.concat([self.last_output, card_layer], 1), 10)),len(self.action_see_index_dicts)) # bs,see
