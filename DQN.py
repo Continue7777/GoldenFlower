@@ -213,10 +213,10 @@ class DQN:
 
     # def save_model(self): #保存模型
     # def restore(self): #加载模型
-    def store_transition(self,observation_this, action, reward,done,observation_next): #DQN存储记忆
+    def store_transition(self,observation_this, action, reward,done,observation_next,Bcards): #DQN存储记忆
         if len(observation_this[0]) < self.sequence_length:
             self.memory.append([observation_this,action,reward,done,observation_next])
-            self.file.write(str(observation_this) + "\t" + action + "\t" + str(reward) + "\t" + str(done) + "\t" + str(observation_next) + "\n")
+            self.file.write(str(observation_this) + "\t" + action + "\t" + str(reward) + "\t" + str(done) + "\t" + str(observation_next) + '\t' + str(Bcards) + "\n")
             if len(self.memory) > 10**7:
                 self.memory = self.memory[:10*5]
 
