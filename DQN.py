@@ -43,14 +43,16 @@ class DQN:
                             'diamond_6': 44, 'diamond_7': 45, 'diamond_8': 46, 'diamond_9': 47, 'diamond_10': 48,
                             'diamond_J': 49, 'diamond_Q': 50, 'diamond_K': 51," ":52}
 
-        self.card_feature1_index_dicts = {"豹子": 10, "同花顺": 9, "金花": 8, "顺子": 7, "对子": 6, "单": 5}
+        self.gameEnv = GlodenFlower([2000,2000])
+        self.card_feature1_index_dicts = {self.gameEnv.scoreMap["豹子"]: 0, self.gameEnv.scoreMap["同花顺"]: 1, self.gameEnv.scoreMap["金花"]: 2,
+                                          self.gameEnv.scoreMap["顺子"]: 3, self.gameEnv.scoreMap["对子"]: 4, self.gameEnv.scoreMap["单"]: 5}
 
         self.sess = tf.Session()
         self.build_network()
         self.sess.run(tf.global_variables_initializer())
         self.memory = []
         self.file = codecs.open("train_data.csv","w",encoding='utf-8')
-        self.gameEnv = GlodenFlower([2000,2000])
+
 
     def get_weights(self,index_dicts, columns,embedding_size):
         res = {}
@@ -136,7 +138,7 @@ class DQN:
         playSequenceIndex = [[self.seq_action_index_dicts[i] for i in j][:20] + [len(self.seq_action_index_dicts)] * (len(self.seq_action_index_dicts) - len(j)) for j in playSequenceStr]
         playSequenceLength = [len(i)+1 for i in playSequenceStr]
         playCardIndex = [sorted([self.card_index_dicts[i] for i in j]) for j in playCardStr]
-        playCardFeature = [[self.gameEnv.score(j)] for j in playCardStr]
+        playCardFeature = [[self.card_feature1_index_dicts[self.gameEnv.score(j)]] for j in playCardStr]
         return {self.playSequenceInput: np.array(playSequenceIndex), self.playCardsInput: np.array(playCardIndex),self.playSequenceLengthInput: np.array(playSequenceLength),
                 self.personStatusInput:np.array(personIndex),self.playCardsFeatureInput:np.array(playCardFeature)}
 
@@ -197,7 +199,7 @@ class DQN:
         playSequenceLength = [len(i)+1 for i in playSequenceStr]
         personIndex = [statusMap[i] for i in personStatus]
         playCardIndex = [sorted([self.card_index_dicts[i] for i in j]) for j in playCardStr]
-        playCardFeature = [[self.gameEnv.score(j)] for j in playCardStr]
+        playCardFeature = [[self.card_feature1_index_dicts[self.gameEnv.score(j)]] for j in playCardStr]
         actionIndex = [self.actions_index_dicts[i] for i in  train_action]
 
         next_status = np.array([[i[0],i[1],i[2]] for i in train_observation_next])
