@@ -19,6 +19,7 @@ if __name__ == '__main__':
             availble_actions = gameEnv.chooseAvailbleAction(playerI)
             action = RLModel.choose_action(np.array([observation_this]),availble_actions)
             #print (playerI, action, gameEnv.deskMoney, gameEnv.nowPrice)
+            gameEnv.playSequence.append(str(playerI) + "_" + action)
             observation_next, reward, done = gameEnv.step(action, "B")
             playerI = "A"
             if done:
