@@ -43,6 +43,8 @@ class DQN:
                             'diamond_6': 44, 'diamond_7': 45, 'diamond_8': 46, 'diamond_9': 47, 'diamond_10': 48,
                             'diamond_J': 49, 'diamond_Q': 50, 'diamond_K': 51," ":52}
 
+        self.card_feature1_index_dicts = {"豹子": 10, "同花顺": 9, "金花": 8, "顺子": 7, "对子": 6, "单": 5}
+
         self.sess = tf.Session()
         self.build_network()
         self.sess.run(tf.global_variables_initializer())
@@ -69,19 +71,21 @@ class DQN:
         return result  # [batch_size, dim]
 
     def build_network(self): #构建网络模型
-        self.weights = self.get_weights([self.seq_action_index_dicts,self.card_index_dicts],["seq_action","card"],self.embedding_size)
+        self.weights = self.get_weights([self.seq_action_index_dicts,self.card_index_dicts,self.card_feature1_index_dicts],["seq_action","card","card_feature1"],self.embedding_size)
 
         self.global_steps = tf.Variable(0, trainable=False)
         self.playSequenceInput = tf.placeholder(shape=[None,self.sequence_length],dtype=tf.int32,name="playSequenceInput")
         self.personStatusInput = tf.placeholder(shape=[None,],dtype=tf.int32,name="personStatusInput") # 1:闷  0:看
         self.playSequenceLengthInput = tf.placeholder(shape=[None],dtype=tf.int32,name="playSequenceLengthInput")
         self.playCardsInput = tf.placeholder(shape=[None,3],dtype=tf.int32,name="playCardsInput")
+        self.playCardsFeatureInput = tf.placeholder(shape=[None,1],dtype=tf.int32,name="playCardsInput")
         self.actionInput = tf.placeholder(shape=[None,len(self.actions_index_dicts)],dtype=tf.float32,name="actionInput")
         self.yInput = tf.placeholder(shape=[None,],dtype=tf.float32,name="yInput")
         self.mask = tf.constant([[0,0,0,0,1,1,1,1,1,1],[1, 1, 1, 1, 0, 0, 0, 0, 0, 0]],dtype=tf.float32)
 
         self.playSequenceEmb   = tf.nn.embedding_lookup(self.weights['seq_action_emb'], self.playSequenceInput) # bs * seq * emb
         self.playCardsEmb = tf.reshape(tf.nn.embedding_lookup(self.weights['card_emb'], self.playCardsInput),[-1, 3 * self.embedding_size]) # bs, 3 * emb
+        self.playCardsFeatureEmb = tf.reshape(tf.nn.embedding_lookup(self.weights['card_feature1_emb'], self.playCardsFeatureInput),[-1,self.embedding_size])  # bs, 3 * emb
 
         cell = tf.nn.rnn_cell.LSTMCell(num_units=10, state_is_tuple=True)
 
@@ -92,7 +96,7 @@ class DQN:
         self.last_output = self.collect_final_step_of_lstm(self.output_fw,self.playSequenceLengthInput-1)
         states_fw, states_bw = states
 
-        card_layer1 = tf.layers.dense(self.playCardsEmb, self.card_layer_unit, activation=tf.nn.leaky_relu)
+        card_layer1 = tf.layers.dense(tf.concat([self.playCardsEmb,self.playCardsFeatureEmb],1), self.card_layer_unit, activation=tf.nn.leaky_relu)
         card_layer = tf.layers.dense(card_layer1, int(self.card_layer_unit / 2), activation=tf.nn.leaky_relu)
 
 
@@ -132,8 +136,9 @@ class DQN:
         playSequenceIndex = [[self.seq_action_index_dicts[i] for i in j][:20] + [len(self.seq_action_index_dicts)] * (len(self.seq_action_index_dicts) - len(j)) for j in playSequenceStr]
         playSequenceLength = [len(i)+1 for i in playSequenceStr]
         playCardIndex = [sorted([self.card_index_dicts[i] for i in j]) for j in playCardStr]
+        playCardFeature = [[self.card_feature1_index_dicts[self.gameEnv.score(j)]] for j in playCardStr]
         return {self.playSequenceInput: np.array(playSequenceIndex), self.playCardsInput: np.array(playCardIndex),self.playSequenceLengthInput: np.array(playSequenceLength),
-                self.personStatusInput:np.array(personIndex)}
+                self.personStatusInput:np.array(personIndex),self.playCardsFeatureInput:np.array(playCardFeature)}
 
     def get_max_Q(self,status):
         return self.sess.run(self.predictionsMaxQValue,feed_dict=self._feed_dict(status))
@@ -192,6 +197,7 @@ class DQN:
         playSequenceLength = [len(i)+1 for i in playSequenceStr]
         personIndex = [statusMap[i] for i in personStatus]
         playCardIndex = [sorted([self.card_index_dicts[i] for i in j]) for j in playCardStr]
+        playCardFeature = [[self.card_feature1_index_dicts[self.gameEnv.score(j)]] for j in playCardStr]
         actionIndex = [self.actions_index_dicts[i] for i in  train_action]
 
         next_status = np.array([[i[0],i[1],i[2]] for i in train_observation_next])
@@ -205,7 +211,7 @@ class DQN:
 
         feed_dict = {self.playSequenceInput:np.array(playSequenceIndex),self.playCardsInput:np.array(playCardIndex),
                      self.actionInput:self._one_hot(actionIndex),self.playSequenceLengthInput:np.array(playSequenceLength),
-                     self.yInput:np.array(y),self.personStatusInput:np.array(personIndex)}
+                     self.yInput:np.array(y),self.personStatusInput:np.array(personIndex),self.playCardsFeatureInput:np.array(playCardFeature)}
         _, global_step,loss = self.sess.run([self.train_op, self.global_steps, self.loss], feed_dict=feed_dict)
         self.step = global_step
         if global_step % 100 == 0:
