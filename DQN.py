@@ -97,16 +97,16 @@ class DQN:
 
 
 
-        # self.predictionsNotSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(self.last_output, 10)),len(self.action_notsee_index_dicts)) # bs,notsee + 1
-        # self.predictionsSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(tf.concat([self.last_output, card_layer], 1), 10)),len(self.action_see_index_dicts)) # bs,see
-        # self.prediction = tf.concat([self.predictionsNotSee[:,:-1],self.predictionsSee],1) # bs see+not_see
-        # self.maskOutput = tf.gather(self.mask,self.personStatusInput * tf.cast(~tf.equal(tf.arg_max(self.predictionsNotSee,1),len(self.action_notsee_index_dicts)),dtype=tf.int32))
-        # # 看 看 看 0
-        # # 看 闷 看 0
-        # # 闷 看 看 0
-        # # 闷 闷 闷 1
-        # self.predictions = self.prediction * self.maskOutput
-        self.predictions = tf.layers.dense(card_layer,len(self.actions_index_dicts),activation=tf.nn.leaky_relu)
+        self.predictionsNotSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(self.last_output, 10)),len(self.action_notsee_index_dicts)) # bs,notsee + 1
+        self.predictionsSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(tf.concat([self.last_output, card_layer], 1), 10)),len(self.action_see_index_dicts)) # bs,see
+        self.prediction = tf.concat([self.predictionsNotSee[:,:-1],self.predictionsSee],1) # bs see+not_see
+        self.maskOutput = tf.gather(self.mask,self.personStatusInput * tf.cast(~tf.equal(tf.arg_max(self.predictionsNotSee,1),len(self.action_notsee_index_dicts)),dtype=tf.int32))
+        # 看 看 看 0
+        # 看 闷 看 0
+        # 闷 看 看 0
+        # 闷 闷 闷 1
+        self.predictions = self.prediction * self.maskOutput
+        # self.predictions = tf.layers.dense(card_layer,len(self.actions_index_dicts),activation=tf.nn.leaky_relu)
 
         self.predictionsMaxQValue = tf.reduce_max(self.predictions)
         self.predictionsMaxQAction = tf.arg_max(self.predictions,1)
