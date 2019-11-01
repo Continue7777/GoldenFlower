@@ -66,7 +66,7 @@ class GlodenFlower:
             reward = self.personPayed["B"]
         if done and rewardB == 0: # 对手开牌输了
             reward = self.personPayed["B"]
-        else:
+        elif done:
             reward = -self.personPayed["A"]
         return observation_next, reward, done
 
