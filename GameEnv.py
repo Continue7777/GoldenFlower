@@ -64,7 +64,7 @@ class GlodenFlower:
         observation_next, rewardB, done = self.step(actionB,"B")
         if actionB == "丢_0": # 对手弃牌
             reward = self.personPayed["B"]
-        if done and rewardB == 0: # 对手开牌输了
+        elif done and rewardB == 0: # 对手开牌输了
             reward = self.personPayed["B"]
         elif done:
             reward = -self.personPayed["A"]
