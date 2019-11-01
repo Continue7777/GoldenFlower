@@ -106,7 +106,7 @@ class DQN:
         # # 闷 看 看 0
         # # 闷 闷 闷 1
         # self.predictions = self.prediction * self.maskOutput
-        self.predictions = tf.layers.dense(tf.nn.relu(card_layer,len(self.actions_index_dicts)))
+        self.predictions = tf.layers.dense(card_layer,len(self.actions_index_dicts),activation=tf.nn.leaky_relu)
 
         self.predictionsMaxQValue = tf.reduce_max(self.predictions)
         self.predictionsMaxQAction = tf.arg_max(self.predictions,1)
