@@ -62,7 +62,7 @@ class GlodenFlower:
             actionB = random.choice(self.chooseAvailbleAction("B"))
         if self.debug:print ("player:%s ,action:%s A_pay:%s B_pay:%s nowPrice:%s" % ("B", actionB, gameEnv.personPayed["A"] ,gameEnv.personPayed["B"], gameEnv.nowPrice))
         observation_next, rewardB, done = self.step(actionB,"B")
-        if action == "丢_0": # 对手弃牌
+        if actionB == "丢_0": # 对手弃牌
             reward = self.personPayed["B"]
         if done and rewardB == 0: # 对手开牌输了
             reward = self.personPayed["B"]
@@ -225,10 +225,10 @@ class GlodenFlower:
 
 
 
-    def chooseAvailbleAction(self,playerI):
-        curStatus = self.personStatus[playerI]
+    def _chooseAvailbleAction(self,personStatus,actions,nowPrice):
+        curStatus = personStatus
         res = []
-        for action in self.actionMoney.keys():
+        for action in actions:
             action_type = action.split("_")[0]
             action_value = int(action.split("_")[1])
             if curStatus == "看" and action_type == "开":
@@ -237,17 +237,21 @@ class GlodenFlower:
                 pass
             elif action_type == "丢":
                 pass
-            elif curStatus == "看" and action_type == "闷":continue
+            elif curStatus == "看" and action_type == "闷":
+                continue
             elif curStatus == "看" and action_type == "看":
-                if self.nowPrice > action_value:continue
+                if nowPrice > action_value: continue
             elif curStatus == "闷" and action_type == "看":
-                if self.nowPrice  > action_value: continue
+                if nowPrice > action_value: continue
             elif curStatus == "闷" and action_type == "闷":
-                if self.nowPrice > 2.5 * action_value: continue
+                if nowPrice > 2.5 * action_value: continue
             else:
                 continue
             res.append(action)
         return res
+
+    def chooseAvailbleAction(self,playerI):
+        return self._chooseAvailbleAction(self.personStatus[playerI],self.actionMoney.keys(),self.nowPrice)
 
 
 if __name__ == '__main__':
