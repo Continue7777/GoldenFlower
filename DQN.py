@@ -14,7 +14,7 @@ class DQN:
         self.sequence_length = sequence_length
         self.learning_rate = learning_rate
         self.batch_size = batch_size
-        self.sigema = 0.9
+        self.sigema = 0.5
         self.step = 0
         self.explore_alpha = 0.9 ** (self.step / 1000)
 
@@ -178,7 +178,7 @@ class DQN:
             if prob[self.actions_index_dicts[action]] > max_value:
                 max_value = action
 
-        if random.random() < 0.9 ** (self.step / 500):
+        if random.random() < max(0.9 ** (self.step / 500),0.05):
             return random.choice(availble_actions)
         return max_action
 
