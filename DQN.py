@@ -147,11 +147,12 @@ class DQN:
 
     def get_max_availble_action_value(self,status,personStatus,nowPrice):
         res = []
+        _feed_dict = self._feed_dict(status)
+        probs = self.sess.run(self.predictions, feed_dict=_feed_dict)
         for i in range(nowPrice.shape[0]):
             availble_actions = self.gameEnv._chooseAvailbleAction(personStatus[i],self.actions_index_dicts.keys(),nowPrice[i])
             avail_index_list = [self.actions_index_dicts[k] for k in availble_actions]
-            _feed_dict = self._feed_dict(status)
-            res.append(max(self.sess.run(self.predictions, feed_dict=_feed_dict)[0,avail_index_list]))
+            res.append(max(probs[i,avail_index_list]))
         return res
 
     def get_action_Q(self,status,action): #通过训练好的网络，根据状态获取动作
