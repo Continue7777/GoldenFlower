@@ -145,12 +145,15 @@ class DQN:
     def get_max_Q(self,status):
         return self.sess.run(self.predictionsMaxQValue,feed_dict=self._feed_dict(status))
 
-    def get_max_action(self,status):
-        return self.sess.run(self.predictionsMaxQAction,feed_dict=self._feed_dict(status))
+    def get_max_action(self,personStatus,status,nowPrice):
+        res = []
+        for i in range(nowPrice.shape[0]):
+            availble_actions = self.gameEnv._chooseAvailbleAction(personStatus[i],self.actions_index_dicts.keys(),nowPrice[i])
+            avail_index_list = [self.actions_index_dicts[k] for k in availble_actions]
+            _feed_dict = self._feed_dict(status)
+            res.append(max(self.sess.run(self.predictions, feed_dict=_feed_dict)[0,avail_index_list]))
+        return res
 
-    def get_max_availble_action(self,status):
-        probs = self.sess.run(self.predictions, feed_dict=self._feed_dict(status))
-        return
 
     def get_action_Q(self,status,action): #通过训练好的网络，根据状态获取动作
         _feed_dict = self._feed_dict(status)
@@ -190,6 +193,8 @@ class DQN:
         train_reward = train_data[:,2]
         train_done = train_data[:,3]
         train_observation_next = train_data[:,4]
+        Astatus = train_data[:, 6]
+        now_price =  train_data[:, 7]
 
         statusMap = {"闷":1,"看":0,"开":0}
         playSequenceStr = [i[0] for i in train_observation_this]
@@ -203,7 +208,7 @@ class DQN:
         actionIndex = [self.actions_index_dicts[i] for i in  train_action]
 
         next_status = np.array([[i[0],i[1],i[2]] for i in train_observation_next])
-        maxQNext = self.get_max_action(next_status)
+        maxQNext = self.get_max_action(next_status,Astatus,now_price)
         y = []
         for i in range(self.batch_size):
             if train_done[i] == True:
@@ -221,10 +226,11 @@ class DQN:
 
     # def save_model(self): #保存模型
     # def restore(self): #加载模型
-    def store_transition(self,observation_this, action, reward,done,observation_next,Bcards): #DQN存储记忆
+    def store_transition(self,observation_this, action, reward,done,observation_next,Bcards,Astatus,now_price): #DQN存储记忆
         if len(observation_this[0]) < self.sequence_length:
             self.memory.append([observation_this,action,reward,done,observation_next])
-            self.file.write(str(observation_this) + "\t" + action + "\t" + str(reward) + "\t" + str(done) + "\t" + str(observation_next) + '\t' + str(Bcards) + "\n")
+            self.file.write(str(observation_this) + "\t" + action + "\t" + str(reward) + "\t" + str(done) + "\t" + str(observation_next) + '\t' + str(Bcards)
+                            + "\t" + str(Astatus) + "\t" + str(now_price) + "\n")
             if len(self.memory) > 10**7:
                 self.memory = self.memory[:10*5]
 

@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
             # DQN 存储记忆
             # RL.store_transition(observation, action, reward)
-            RLModel.store_transition(observation_this, action, reward,done,observation_next,gameEnv.playerCards["B"])
+            RLModel.store_transition(observation_this, action, reward,done,observation_next,gameEnv.playerCards["B"],gameEnv.personStatus["A"],gameEnv.nowPrice)
 
             # 控制学习起始时间和频率 (先累积一些记忆再开始学习)
             if (episode > 2000) and (episode % 10 == 0):

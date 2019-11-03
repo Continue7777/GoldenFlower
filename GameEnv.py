@@ -287,7 +287,7 @@ if __name__ == '__main__':
 
             # DQN 存储记忆
             # RL.store_transition(observation, action, reward)
-            memory.append((observation_this, action, reward,done,observation_next))
+            memory.append((observation_this, action, reward,done,observation_next,gameEnv.personStatus["A"],gameEnv.nowPrice))
 
             # 控制学习起始时间和频率 (先累积一些记忆再开始学习)
             # if (step > 200) and (step % 5 == 0):
