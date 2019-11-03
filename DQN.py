@@ -145,7 +145,7 @@ class DQN:
     def get_max_Q(self,status):
         return self.sess.run(self.predictionsMaxQValue,feed_dict=self._feed_dict(status))
 
-    def get_max_availble_action_Q(self,personStatus,status,nowPrice):
+    def get_max_availble_action_value(self,personStatus,status,nowPrice):
         res = []
         for i in range(nowPrice.shape[0]):
             availble_actions = self.gameEnv._chooseAvailbleAction(personStatus[i],self.actions_index_dicts.keys(),nowPrice[i])
@@ -211,7 +211,7 @@ class DQN:
         actionIndex = [self.actions_index_dicts[i] for i in  train_action]
 
         next_status = np.array([[i[0],i[1],i[2]] for i in train_observation_next])
-        maxQNext = self.get_max_action(next_status,Astatus,now_price)
+        maxQNext = self.get_max_availble_action_value(next_status,Astatus,now_price)
         y = []
         for i in range(self.batch_size):
             if train_done[i] == True:
