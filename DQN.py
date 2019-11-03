@@ -196,8 +196,8 @@ class DQN:
         train_reward = train_data[:,2]
         train_done = train_data[:,3]
         train_observation_next = train_data[:,4]
-        Astatus = train_data[:, 6]
-        now_price =  train_data[:, 7]
+        Astatus = train_data[:, 5]
+        now_price =  train_data[:, 6]
 
         statusMap = {"闷":1,"看":0,"开":0}
         playSequenceStr = [i[0] for i in train_observation_this]
@@ -231,7 +231,7 @@ class DQN:
     # def restore(self): #加载模型
     def store_transition(self,observation_this, action, reward,done,observation_next,Bcards,Astatus,now_price): #DQN存储记忆
         if len(observation_this[0]) < self.sequence_length:
-            self.memory.append([observation_this,action,reward,done,observation_next])
+            self.memory.append([observation_this,action,reward,done,observation_next,Astatus,now_price])
             self.file.write(str(observation_this) + "\t" + action + "\t" + str(reward) + "\t" + str(done) + "\t" + str(observation_next) + '\t' + str(Bcards)
                             + "\t" + str(Astatus) + "\t" + str(now_price) + "\n")
             if len(self.memory) > 10**7:
