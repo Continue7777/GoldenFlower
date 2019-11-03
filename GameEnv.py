@@ -57,7 +57,7 @@ class GlodenFlower:
             return observation_next,reward,done
         if RLModel:
             availble_actions = self.chooseAvailbleAction("B")
-            actionB = RLModel.choose_action(np.array([observation_next]),availble_actions)
+            actionB,_ = RLModel.choose_action(np.array([observation_next]),availble_actions)
         else:
             actionB = random.choice(self.chooseAvailbleAction("B"))
         if self.debug:print ("player:%s ,action:%s A_pay:%s B_pay:%s nowPrice:%s" % ("B", actionB, gameEnv.personPayed["A"] ,gameEnv.personPayed["B"], gameEnv.nowPrice))

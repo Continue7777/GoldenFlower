@@ -172,12 +172,14 @@ class DQN:
         max_value = -1000
         max_action = "丢_0"
         for action in availble_actions:
-            if prob[self.actions_index_dicts[action]] > max_value:
-                max_value = action
+            t_v = prob[self.actions_index_dicts[action]]
+            if  t_v > max_value:
+                max_value = t_v
+                max_action = action
 
         if random.random() < max(0.9 ** (self.step / 500),0.05):
-            return random.choice(availble_actions)
-        return max_action
+            return random.choice(availble_actions),-1
+        return max_action,max_value
 
     def _one_hot(self,x):
         res = np.zeros((len(x), 10))
