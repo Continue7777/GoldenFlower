@@ -145,7 +145,7 @@ class DQN:
     def get_max_Q(self,status):
         return self.sess.run(self.predictionsMaxQValue,feed_dict=self._feed_dict(status))
 
-    def get_max_availble_action_value(self,personStatus,status,nowPrice):
+    def get_max_availble_action_value(self,status,personStatus,nowPrice):
         res = []
         for i in range(nowPrice.shape[0]):
             availble_actions = self.gameEnv._chooseAvailbleAction(personStatus[i],self.actions_index_dicts.keys(),nowPrice[i])
