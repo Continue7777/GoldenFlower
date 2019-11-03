@@ -152,6 +152,9 @@ class DQN:
         for i in range(nowPrice.shape[0]):
             availble_actions = self.gameEnv._chooseAvailbleAction(personStatus[i],self.actions_index_dicts.keys(),nowPrice[i])
             avail_index_list = [self.actions_index_dicts[k] for k in availble_actions]
+            for j in range(availble_actions):
+                print (j)
+            print (probs[i,avail_index_list])
             res.append(max(probs[i,avail_index_list]))
         return res
 
