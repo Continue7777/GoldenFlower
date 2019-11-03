@@ -145,7 +145,7 @@ class DQN:
     def get_max_Q(self,status):
         return self.sess.run(self.predictionsMaxQValue,feed_dict=self._feed_dict(status))
 
-    def get_max_action(self,personStatus,status,nowPrice):
+    def get_max_availble_action_Q(self,personStatus,status,nowPrice):
         res = []
         for i in range(nowPrice.shape[0]):
             availble_actions = self.gameEnv._chooseAvailbleAction(personStatus[i],self.actions_index_dicts.keys(),nowPrice[i])
@@ -153,7 +153,6 @@ class DQN:
             _feed_dict = self._feed_dict(status)
             res.append(max(self.sess.run(self.predictions, feed_dict=_feed_dict)[0,avail_index_list]))
         return res
-
 
     def get_action_Q(self,status,action): #通过训练好的网络，根据状态获取动作
         _feed_dict = self._feed_dict(status)
@@ -167,13 +166,17 @@ class DQN:
         return res_dict
 
     def choose_action(self,status,availble_actions): #通过训练好的网络，根据状态获取动作
-        action_index = self.get_max_action(status)
-        if action_index not in availble_actions:
+        _feed_dict = self._feed_dict(status)
+        prob = self.sess.run(self.predictions, feed_dict=_feed_dict)[0]
+        max_value = -1000
+        max_action = "丢_0"
+        for action in availble_actions:
+            if prob[self.actions_index_dicts[action]] > max_value:
+                max_value = action
+
+        if random.random() < 0.9 ** (self.step / 500):
             return random.choice(availble_actions)
-        else:
-            if random.random() < 0.9 ** (self.step / 500):
-                return random.choice(availble_actions)
-        return self.action_reverse_index_dicts[action_index[0]]
+        return max_action
 
     def _one_hot(self,x):
         res = np.zeros((len(x), 10))
