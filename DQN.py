@@ -176,7 +176,7 @@ class DQN:
         return max_action,max_value
 
     def _one_hot(self,x,size=10):
-        res = np.zeros((len(x), 10))
+        res = np.zeros((len(x), size))
         res[[i for i in range(len(x))], x] = 1
         return res
 
