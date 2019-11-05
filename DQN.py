@@ -166,7 +166,10 @@ class DQN:
         res_dict = {k+self.action_reverse_index_dicts[k]:v for k,v in zip(self.action_reverse_index_dicts.keys(),prob[0])}
         return res_dict
 
-    def choose_action(self,status,availble_actions): #通过训练好的网络，根据状态获取动作
+    def choose_action(self,status,availble_actions,step,withoutRandom=False): #通过训练好的网络，根据状态获取动作
+        if step > 20 and "开_0" in availble_actions:
+            return "开_0",-2
+
         _feed_dict = self._feed_dict(status)
         prob = self.sess.run(self.predictions, feed_dict=_feed_dict)[0]
         max_value = -1000
@@ -177,8 +180,9 @@ class DQN:
                 max_value = t_v
                 max_action = action
 
-        if random.random() < max(0.9 ** (self.step / 500),0.05):
-            return random.choice(availble_actions),-1
+        if withoutRandom == False:
+            if random.random() < max(0.9 ** (self.step / 500),0.05):
+                return random.choice(availble_actions),-1
         return max_action,max_value
 
     def _one_hot(self,x):
