@@ -177,7 +177,10 @@ class DQN:
 
     def _one_hot(self,x,size=10):
         res = np.zeros((len(x), size))
-        res[[i for i in range(len(x))], x] = 1
+        try:
+            res[[i for i in range(len(x))], x] = 1
+        except:
+            pass
         return res
 
     def train(self,train_data): #训练
@@ -206,7 +209,14 @@ class DQN:
         playCardIndex = [sorted([self.card_index_dicts[i] for i in j]) for j in playCardStr]
         playCardFeature = [[self.card_feature1_index_dicts[self.gameEnv.score(j)]] for j in playCardStr]
         actionIndex = [self.actions_index_dicts[i] for i in  train_action]
-        actionOpenIndex = [self.action_notsee_index_dicts[i] if i in self.action_notsee_index_dicts else len(self.action_notsee_index_dicts)-1 for i in train_action]
+        actionOpenIndex = []
+        for i in train_action:
+            if i == "丢_0":
+                actionOpenIndex.append(-1)
+            elif i in self.action_notsee_index_dicts:
+                actionOpenIndex.append(self.action_notsee_index_dicts[i])
+            else:
+                actionOpenIndex.append(len(self.action_notsee_index_dicts)-1)
 
         next_status = np.array([[i[0],i[1],i[2]] for i in train_observation_next])
         maxQNext = self.get_max_availble_action_value(next_status,Astatus,now_price)
