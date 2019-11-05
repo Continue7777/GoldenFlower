@@ -17,7 +17,7 @@ if __name__ == '__main__':
         observation_this = [[],gameEnv.playerCards["A"],gameEnv.personStatus["A"]]
         if playerI == "B":
             availble_actions = gameEnv.chooseAvailbleAction(playerI)
-            action,_ = RLModel.choose_action(np.array([observation_this]),availble_actions)
+            action,_ = RLModel.choose_action(np.array([observation_this]),availble_actions,gameEnv.stepNum)
             #print (playerI, action, gameEnv.deskMoney, gameEnv.nowPrice)
             gameEnv.playSequence.append(str(playerI) + "_" + action)
             observation_next, reward, done = gameEnv.step(action, "B")
@@ -28,7 +28,7 @@ if __name__ == '__main__':
         while True:
             # DQN 根据观测值选择行为
             availble_actions = gameEnv.chooseAvailbleAction(playerI)
-            action,_ = RLModel.choose_action(np.array([observation_this]),availble_actions)
+            action,_ = RLModel.choose_action(np.array([observation_this]),availble_actions,gameEnv.stepNum)
             # 环境根据行为给出下一个 state, reward, 是否终止
             #print (playerI, action, gameEnv.deskMoney, gameEnv.nowPrice,gameEnv.personStatus[playerI])
             observation_next, reward, done = gameEnv.stepA(action,RLModel)

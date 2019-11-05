@@ -50,6 +50,15 @@ class GlodenFlower:
         self.personPayed["B"] = 1
 
 
+    def transformObservationForB(self,observation):
+        def a2b(s):
+            s.replace("A", "C")
+            s.replace("B", "A")
+            s.replace("C", "B")
+            return s
+        seq = observation[0]
+        seq = [a2b(s) for s in seq]
+        return [seq,self.playerCards["B"],self.personStatus["B"]]
 
     def stepA(self,action,RLModel):
         observation_next,reward,done = self.step(action,"A")
@@ -57,7 +66,7 @@ class GlodenFlower:
             return observation_next,reward,done
         if RLModel:
             availble_actions = self.chooseAvailbleAction("B")
-            actionB,_ = RLModel.choose_action(np.array([observation_next]),availble_actions)
+            actionB,_ = RLModel.choose_action(np.array(self.transformObservationForB(observation_next)),availble_actions,self.stepNum)
         else:
             actionB = random.choice(self.chooseAvailbleAction("B"))
         # if self.debug:print ("player:%s ,action:%s A_pay:%s B_pay:%s nowPrice:%s" % ("B", actionB, gameEnv.personPayed["A"] ,gameEnv.personPayed["B"], gameEnv.nowPrice))
