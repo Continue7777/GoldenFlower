@@ -136,7 +136,7 @@ class DQN:
         personStatus = status[:,2]
         personIndex = [statusMap[i] for i in personStatus]
         playSequenceIndex = [[self.seq_action_index_dicts[i] for i in j][:20] + [len(self.seq_action_index_dicts)] * (len(self.seq_action_index_dicts) - len(j)) for j in playSequenceStr]
-        playSequenceLength = [len(i)+1 for i in playSequenceStr]
+        playSequenceLength = [min(20,len(i)+1) for i in playSequenceStr]
         playCardIndex = [sorted([self.card_index_dicts[i] for i in j]) for j in playCardStr]
         playCardFeature = [[self.card_feature1_index_dicts[self.gameEnv.score(j)]] for j in playCardStr]
         return {self.playSequenceInput: np.array(playSequenceIndex), self.playCardsInput: np.array(playCardIndex),self.playSequenceLengthInput: np.array(playSequenceLength),
