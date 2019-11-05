@@ -18,7 +18,7 @@ class GlodenFlower:
         # 全局状态
         self.personMoney = {"A":moneyList[0],"B":moneyList[1]}
         self.playerCards = {"A":"","B":""}
-        self.stepsNum = 0
+        self.stepNum = 0
 
         # 每步参数
         self.whoWinLast = "A"
