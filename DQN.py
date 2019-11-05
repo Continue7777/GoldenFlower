@@ -144,8 +144,6 @@ class DQN:
         return {self.playSequenceInput: np.array(playSequenceIndex), self.playCardsInput: np.array(playCardIndex),self.playSequenceLengthInput: np.array(playSequenceLength),
                 self.personStatusInput:np.array(personIndex),self.playCardsFeatureInput:np.array(playCardFeature)}
 
-    def get_max_Q(self,status):
-        return self.sess.run(self.predictionsMaxQValue,feed_dict=self._feed_dict(status))
 
     def get_max_availble_action_value(self,status,personStatus,nowPrice):
         res = []
@@ -157,18 +155,6 @@ class DQN:
             res.append(max(probs[i,avail_index_list]))
         return res
 
-    def get_action_Q(self,status,action): #通过训练好的网络，根据状态获取动作
-        _feed_dict = self._feed_dict(status)
-        _feed_dict[self.actionInput] = self._one_hot([self.actions_index_dicts[action]])
-        actionOpenIndex = [self.action_notsee_index_dicts[action] if action in self.action_notsee_index_dicts else len(self.action_notsee_index_dicts)-1]
-        _feed_dict[self.actionInputOpen] = self._one_hot(actionOpenIndex)
-        return self.sess.run(self.action_predictions,feed_dict=self._feed_dict(status))
-
-    def get_action_prob(self,status):
-        _feed_dict = self._feed_dict(status)
-        prob = self.sess.run(self.predictions, feed_dict=_feed_dict)
-        res_dict = {k+self.action_reverse_index_dicts[k]:v for k,v in zip(self.action_reverse_index_dicts.keys(),prob[0])}
-        return res_dict
 
     def choose_action(self,status,availble_actions,step,withoutRandom=False): #通过训练好的网络，根据状态获取动作
         if step > 20 and "开_0" in availble_actions:
@@ -189,7 +175,7 @@ class DQN:
                 return random.choice(availble_actions),-1
         return max_action,max_value
 
-    def _one_hot(self,x):
+    def _one_hot(self,x,size=10):
         res = np.zeros((len(x), 10))
         res[[i for i in range(len(x))], x] = 1
         return res
@@ -232,7 +218,7 @@ class DQN:
                 y.append(train_reward[i] + self.sigema * maxQNext[i])
 
         feed_dict = {self.playSequenceInput:np.array(playSequenceIndex),self.playCardsInput:np.array(playCardIndex),
-                     self.actionInput:self._one_hot(actionIndex),self.actionInputOpen:self._one_hot(actionOpenIndex),self.playSequenceLengthInput:np.array(playSequenceLength),
+                     self.actionInput:self._one_hot(actionIndex),self.actionInputOpen:self._one_hot(actionOpenIndex,len(self.action_notsee_index_dicts)),self.playSequenceLengthInput:np.array(playSequenceLength),
                      self.yInput:np.array(y),self.personStatusInput:np.array(personIndex),self.playCardsFeatureInput:np.array(playCardFeature)}
         _, global_step,loss = self.sess.run([self.train_op, self.global_steps, self.loss], feed_dict=feed_dict)
         self.step = global_step
