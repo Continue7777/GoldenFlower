@@ -14,7 +14,7 @@ class DQN:
         self.sequence_length = sequence_length
         self.learning_rate = learning_rate
         self.batch_size = batch_size
-        self.sigema = 0.5
+        self.sigema = 1
         self.step = 0
         self.explore_alpha = 0.9 ** (self.step / 1000)
 
