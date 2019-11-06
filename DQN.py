@@ -255,10 +255,9 @@ class DQN:
             if "A" in action:
                 key = ",".join(seq[:i])
                 if key in self.memory_open:
-                    n = len(self.memory_open[key])
-                    self.memory_open[key] = (self.memory_open[key] * n + reward) / (n + 1)
+                    self.memory_open[key] = (self.memory_open[key][0] + reward,self.memory_open[key][1] + 1)
                 else:
-                    self.memory_open[key] = reward
+                    self.memory_open[key] = (reward,1)
                 if "看" in action:
                     break
 
