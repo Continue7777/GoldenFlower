@@ -250,7 +250,7 @@ class DQN:
         :param reward: 序列奖励
         """
         for i,action in enumerate(seq):
-            if action == "丢_0":
+            if "丢" in action:
                 break
             if "A" in action:
                 key = ",".join(seq[:i+1])
