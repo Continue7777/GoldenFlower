@@ -176,7 +176,7 @@ class DQN:
                 max_action = action
 
         if withoutRandom == False:
-            if random.random() < max(0.9 ** (self.step / 500),0.05):
+            if random.random() < max(0.8 ** (self.step / 500),0.05):
                 return random.choice(availble_actions),-1
         return max_action,max_value
 
