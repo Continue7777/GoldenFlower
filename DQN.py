@@ -77,6 +77,7 @@ class DQN:
         self.weights = self.get_weights([self.seq_action_index_dicts,self.card_index_dicts,self.card_feature1_index_dicts],["seq_action","card","card_feature1"],self.embedding_size)
 
         self.global_steps = tf.Variable(0, trainable=False)
+        self.global_steps_open = tf.Variable(0, trainable=False)
         self.playSequenceInput = tf.placeholder(shape=[None,self.sequence_length],dtype=tf.int32,name="playSequenceInput")
         self.personStatusInput = tf.placeholder(shape=[None,],dtype=tf.int32,name="personStatusInput") # 1:闷  0:看
         self.playSequenceLengthInput = tf.placeholder(shape=[None],dtype=tf.int32,name="playSequenceLengthInput")
@@ -133,7 +134,7 @@ class DQN:
         # Optimizer Parameters from original paper
         self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
         self.train_op = self.optimizer.minimize(self.loss, global_step=self.global_steps)
-        self.train_op_open = self.optimizer.minimize(self.loss_open, global_step=self.global_steps)
+        self.train_op_open = self.optimizer.minimize(self.loss_open, global_step=self.global_steps_open)
 
     def _feed_dict(self,status):
         statusMap = {"闷":1,"看":0,"开":0}
@@ -240,7 +241,17 @@ class DQN:
             print("loss",global_step,loss)
 
     def train_open(self,train_data):
-        pass
+        playSequenceStr = [i[0].split(",") for i in train_data]
+        playSequenceIndex = [[self.seq_action_index_dicts[i] for i in j] + [len(self.seq_action_index_dicts)] * (len(self.seq_action_index_dicts) - len(j)) for j in playSequenceStr]
+        playSequenceLength = [len(i) + 1 for i in playSequenceStr]
+        actionIndex = [self.action_notsee_index_dicts[i[1]] for i in train_data]
+        yInput = [i[2] for i in train_data]
+        feed_dict = {self.playSequenceInput: np.array(playSequenceIndex),
+                     self.actionInputOpen: self._one_hot(actionIndex),self.playSequenceLengthInput: np.array(playSequenceLength),
+                     self.yInputOpen: np.array(yInput)}
+        _, global_step, loss = self.sess.run([self.train_op_open, self.global_steps_open, self.loss_open], feed_dict=feed_dict)
+        if global_step % 100 == 0:
+            print("open loss",global_step,loss)
     # def save_model(self): #保存模型
     # def restore(self): #加载模型
 
@@ -273,6 +284,31 @@ class DQN:
 
     def experience_replay(self): #记忆回放
         return np.array(random.sample(self.memory, self.batch_size))
+
+    def experience_open_replay(self): # 回放关于是否继续闷的数据用于训练
+        """
+        :return:seq action reward   reward经过mcts生成，直接监督学习
+        """
+        train_data_dict = {}
+        for i in self.memory_open.keys():
+            key = ",".join(i.split(",")[:-1])
+            action = i.split(",")[-1]
+            if "看" in action:
+                action = "看"
+            if key in train_data_dict:
+                if action in train_data_dict[key]:
+                    train_data_dict[key][action] += np.array(self.memory_open[i], dtype=np.int64)
+                else:
+                    train_data_dict[key][action] = np.array(self.memory_open[i])
+            else:
+                train_data_dict[key] = {}
+                train_data_dict[key][action] = np.array(self.memory_open[i])
+
+        train_data = []
+        for i in train_data_dict.keys():
+            for j in train_data_dict[i].keys():
+                train_data.append([i, j, train_data_dict[i][j][0] / float(train_data_dict[i][j][1])])
+        return random.sample(train_data, min(len(train_data), 500))
 
     def exerience_replay_final_step(self):
         data = np.array(self.memory)
