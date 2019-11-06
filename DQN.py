@@ -253,7 +253,7 @@ class DQN:
             if action == "丢_0":
                 break
             if "A" in action:
-                key = ",".join(seq[:i])
+                key = ",".join(seq[:i+1])
                 if key in self.memory_open:
                     self.memory_open[key] = (self.memory_open[key][0] + reward,self.memory_open[key][1] + 1)
                 else:
