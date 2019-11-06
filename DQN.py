@@ -247,7 +247,7 @@ class DQN:
         actionIndex = [self.action_notsee_index_dicts[i[1]] for i in train_data]
         yInput = [i[2] for i in train_data]
         feed_dict = {self.playSequenceInput: np.array(playSequenceIndex),
-                     self.actionInputOpen: self._one_hot(actionIndex),self.playSequenceLengthInput: np.array(playSequenceLength),
+                     self.actionInputOpen: self._one_hot(actionIndex,len(self.action_notsee_index_dicts)),self.playSequenceLengthInput: np.array(playSequenceLength),
                      self.yInputOpen: np.array(yInput)}
         _, global_step, loss = self.sess.run([self.train_op_open, self.global_steps_open, self.loss_open], feed_dict=feed_dict)
         if global_step % 100 == 0:
