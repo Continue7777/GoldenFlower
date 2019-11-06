@@ -51,7 +51,7 @@ class DQN:
         self.build_network()
         self.sess.run(tf.global_variables_initializer())
         self.memory = []
-        self.memory_open = []
+        self.memory_open = {}
         self.file = codecs.open("train_data.csv","w",encoding='utf-8')
 
 
@@ -250,14 +250,17 @@ class DQN:
         :param reward: 序列奖励
         """
         for i,action in enumerate(seq):
+            if action == "丢_0":
+                break
             if "A" in action:
-                if action in self.action_notsee_index_dicts.keys():
-                    key = ",".join(seq[:i])
-                    if key in self.memory_open:
-                        n = len(self.memory_open[key])
-                        self.memory_open[key] = (self.memory_open[key] * n + reward) / (n + 1)
-                    else:
-                        self.memory_open[key] = reward
+                key = ",".join(seq[:i])
+                if key in self.memory_open:
+                    n = len(self.memory_open[key])
+                    self.memory_open[key] = (self.memory_open[key] * n + reward) / (n + 1)
+                else:
+                    self.memory_open[key] = reward
+                if "看" in action:
+                    break
 
     def store_transition(self,observation_this, action, reward,done,observation_next,Bcards,Astatus,now_price): #DQN存储记忆
         if len(observation_this[0]) < self.sequence_length:
