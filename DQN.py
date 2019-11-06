@@ -51,6 +51,7 @@ class DQN:
         self.build_network()
         self.sess.run(tf.global_variables_initializer())
         self.memory = []
+        self.memory_open = []
         self.file = codecs.open("train_data.csv","w",encoding='utf-8')
 
 
@@ -81,9 +82,10 @@ class DQN:
         self.playSequenceLengthInput = tf.placeholder(shape=[None],dtype=tf.int32,name="playSequenceLengthInput")
         self.playCardsInput = tf.placeholder(shape=[None,3],dtype=tf.int32,name="playCardsInput")
         self.playCardsFeatureInput = tf.placeholder(shape=[None,1],dtype=tf.int32,name="playCardsInput")
-        self.actionInputOpen = tf.placeholder(shape=[None, len(self.action_notsee_index_dicts)], dtype=tf.float32,name="actionInputOpen")
         self.actionInput = tf.placeholder(shape=[None,len(self.actions_index_dicts)],dtype=tf.float32,name="actionInput")
+        self.actionInputOpen = tf.placeholder(shape=[None, len(self.action_notsee_index_dicts)], dtype=tf.float32,name="actionInputOpen")
         self.yInput = tf.placeholder(shape=[None,],dtype=tf.float32,name="yInput")
+        self.yInputOpen = tf.placeholder(shape=[None,],dtype=tf.float32,name="yInputOpen")
         self.mask = tf.constant([[0,0,0,0,1,1,1,1,1,1],[1, 1, 1, 1, 0, 0, 0, 0, 0, 0]],dtype=tf.float32)
 
         self.playSequenceEmb   = tf.nn.embedding_lookup(self.weights['seq_action_emb'], self.playSequenceInput) # bs * seq * emb
@@ -123,13 +125,15 @@ class DQN:
         self.action_predictions =  tf.reduce_sum(tf.multiply(self.predictions, self.actionInput), reduction_indices=1)
 
         # Calculate the loss
-        self.losses1 = tf.squared_difference(self.yInput, self.action_open_predictions)
-        self.losses2 = tf.squared_difference(self.yInput, self.action_predictions)
-        self.loss = tf.reduce_mean(self.losses1 + self.losses2)
+        self.losses_open = tf.squared_difference(self.yInputOpen, self.action_open_predictions)
+        self.loss_open = tf.reduce_mean(self.losses_open)
+        self.losses = tf.squared_difference(self.yInput, self.action_predictions)
+        self.loss = tf.reduce_mean(self.losses)
 
         # Optimizer Parameters from original paper
         self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
         self.train_op = self.optimizer.minimize(self.loss, global_step=self.global_steps)
+        self.train_op_open = self.optimizer.minimize(self.loss_open, global_step=self.global_steps)
 
     def _feed_dict(self,status):
         statusMap = {"闷":1,"看":0,"开":0}
@@ -235,11 +239,31 @@ class DQN:
         if global_step % 100 == 0:
             print("loss",global_step,loss)
 
+    def train_open(self,train_data):
+        pass
     # def save_model(self): #保存模型
     # def restore(self): #加载模型
+
+    def parse_mcts(self,seq,reward):
+        """
+        :param seq: 传入done的序列，从A第一个action到非闷为止，处理到每一个对应的Mcts节点（均值处理）
+        :param reward: 序列奖励
+        """
+        for i,action in enumerate(seq):
+            if "A" in action:
+                if action in self.action_notsee_index_dicts.keys():
+                    key = ",".join(seq[:i])
+                    if key in self.memory_open:
+                        n = len(self.memory_open[key])
+                        self.memory_open[key] = (self.memory_open[key] * n + reward) / (n + 1)
+                    else:
+                        self.memory_open[key] = reward
+
     def store_transition(self,observation_this, action, reward,done,observation_next,Bcards,Astatus,now_price): #DQN存储记忆
         if len(observation_this[0]) < self.sequence_length:
             self.memory.append([observation_this,action,reward,done,observation_next,Astatus,now_price])
+            if done:
+                self.parse_mcts(observation_next[0],reward)
             self.file.write(str(observation_this) + "\t" + action + "\t" + str(reward) + "\t" + str(done) + "\t" + str(observation_next) + '\t' + str(Bcards)
                             + "\t" + str(Astatus) + "\t" + str(now_price) + "\n")
             if len(self.memory) > 10**7:
