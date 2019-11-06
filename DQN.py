@@ -241,8 +241,8 @@ class DQN:
             print("loss",global_step,loss)
 
     def train_open(self,train_data):
-        playSequenceStr = [i[0].split(",") for i in train_data]
-        playSequenceIndex = [[self.seq_action_index_dicts[i] if i != "" else len(self.seq_action_index_dicts) for i in j] + [len(self.seq_action_index_dicts)] * (len(self.seq_action_index_dicts) - len(j)) for j in playSequenceStr]
+        playSequenceStr = [i[0].split(",") if i != "" else [] for i in train_data]
+        playSequenceIndex = [[self.seq_action_index_dicts[i] for i in j] + [len(self.seq_action_index_dicts)] * (len(self.seq_action_index_dicts) - len(j)) for j in playSequenceStr]
         playSequenceLength = [len(i) + 1 for i in playSequenceStr]
         actionIndex = [self.action_notsee_index_dicts[i[1]] for i in train_data]
         yInput = [i[2] for i in train_data]
