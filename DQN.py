@@ -294,7 +294,7 @@ class DQN:
             key = ",".join(i.split(",")[:-1])
             action = i.split(",")[-1]
             if "看" in action:
-                action = "看"
+                action = "A_看"
             if key in train_data_dict:
                 if action in train_data_dict[key]:
                     train_data_dict[key][action] += np.array(self.memory_open[i], dtype=np.int64)
