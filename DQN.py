@@ -307,7 +307,7 @@ class DQN:
         train_data = []
         for i in train_data_dict.keys():
             for j in train_data_dict[i].keys():
-                train_data.append([i, j, train_data_dict[i][j][0] / float(train_data_dict[i][j][1])])
+                train_data.append([i, "_".join(j.split("_")[1:]), train_data_dict[i][j][0] / float(train_data_dict[i][j][1])])
         return random.sample(train_data, min(len(train_data), 500))
 
     def exerience_replay_final_step(self):
