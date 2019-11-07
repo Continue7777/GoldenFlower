@@ -161,24 +161,39 @@ class DQN:
         return res
 
 
-    def choose_action(self,status,availble_actions,step,withoutRandom=False): #通过训练好的网络，根据状态获取动作
+    def choose_action(self,status,availble_actions,step,debug=False): #通过训练好的网络，根据状态获取动作
+        def random_pick(seq, probabilities):
+            x = random.uniform(0, 1)  # 首先随机生成一个0，1之间的随机数
+            cumulative_probability = 0.0
+            for item, item_probability in zip(seq, probabilities):  # seq代表待输入的字符串，prob代表各自字符串对应的概率
+                cumulative_probability += item_probability  # 只有当累加的概率比刚才随机生成的随机数大时候，才跳出，并输出此时对应的字符串
+                if x < cumulative_probability:
+                    break
+            return item
+
+        def softmax(x, alpha=1):
+            x_exp = np.exp(np.array(x) * alpha)
+            # 如果是列向量，则axis=0
+            x_sum = np.sum(x_exp, keepdims=True)
+            s = x_exp / x_sum
+            return s
+
         if step > 20 and "开_0" in availble_actions:
             return "开_0",-2
 
         _feed_dict = self._feed_dict(status)
         prob = self.sess.run(self.predictions, feed_dict=_feed_dict)[0]
-        max_value = -1000
-        max_action = "丢_0"
+        availble_actions_values = []
         for action in availble_actions:
-            t_v = prob[self.actions_index_dicts[action]]
-            if  t_v > max_value:
-                max_value = t_v
-                max_action = action
+            availble_actions_values.append(prob[self.actions_index_dicts[action]])
+        availble_actions_values = softmax(availble_actions_values)
 
-        if withoutRandom == False:
-            if random.random() < max(0.1 ** (self.step / 500),0.05):
-                return random.choice(availble_actions),-1
-        return max_action,max_value
+        if debug:
+            for k,v in zip(availble_actions,availble_actions_values):
+                print(k,v)
+
+
+        return random_pick(availble_actions,availble_actions_values)
 
     def _one_hot(self,x,size=10):
         res = np.zeros((len(x), size))
