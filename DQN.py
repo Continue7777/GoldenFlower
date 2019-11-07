@@ -193,7 +193,7 @@ class DQN:
                 print(k,v)
 
 
-        return random_pick(availble_actions,availble_actions_values)
+        return random_pick(availble_actions,availble_actions_values),max(availble_actions_values)
 
     def _one_hot(self,x,size=10):
         res = np.zeros((len(x), size))
