@@ -109,13 +109,13 @@ class DQN:
 
         self.predictionsNotSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(self.last_output, 128)),len(self.action_notsee_index_dicts)) # bs,notsee + 1
         self.predictionsSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(tf.concat([self.last_output, card_layer], 1), 128)),len(self.action_see_index_dicts)) # bs,see
-        self.prediction = tf.concat([self.predictionsNotSee[:,:-1],self.predictionsSee],1) # bs see+not_see
-        self.maskOutput = tf.gather(self.mask,self.personStatusInput * tf.cast(~tf.equal(tf.arg_max(self.predictionsNotSee,1),len(self.action_notsee_index_dicts)-1),dtype=tf.int32))
+        self.predictions = tf.concat([self.predictionsNotSee[:,:-1],self.predictionsSee],1) # bs see+not_see
+        # self.maskOutput = tf.gather(self.mask,self.personStatusInput * tf.cast(~tf.equal(tf.arg_max(self.predictionsNotSee,1),len(self.action_notsee_index_dicts)-1),dtype=tf.int32))
         # 看 看 看 0
         # 看 闷 看 0
         # 闷 看 看 0
         # 闷 闷 闷 1
-        self.predictions = self.prediction * self.maskOutput
+        # self.predictions = self.prediction * self.maskOutput
         # self.predictions = tf.layers.dense(card_layer,len(self.actions_index_dicts),activation=tf.nn.leaky_relu)
 
         self.predictionsMaxQValue = tf.reduce_max(self.predictions)
@@ -161,7 +161,7 @@ class DQN:
         return res
 
 
-    def choose_action(self,status,availble_actions,step,debug=False): #通过训练好的网络，根据状态获取动作
+    def choose_action(self,status,personStatus,availble_actions,step,debug=False): #通过训练好的网络，根据状态获取动作
         def random_pick(seq, probabilities):
             x = random.uniform(0, 1)  # 首先随机生成一个0，1之间的随机数
             cumulative_probability = 0.0
@@ -178,21 +178,39 @@ class DQN:
             s = x_exp / x_sum
             return s
 
+        # 超出序列的直接开截断
         if step > 20 and "开_0" in availble_actions:
             return "开_0",-2
 
         _feed_dict = self._feed_dict(status)
-        prob = self.sess.run(self.predictions, feed_dict=_feed_dict)[0]
+        prob_all = self.sess.run(self.predictions, feed_dict=_feed_dict)[0]
+        # 状态为闷的，确定是否要看
+        if personStatus == "闷":
+            _feed_dict = self._feed_dict(status)
+            prob_not_see = self.sess.run(self.predictionsNotSee, feed_dict=_feed_dict)[0]
+            if np.argmax(prob_not_see) == len(self.action_notsee_index_dicts) - 1:
+                seeFlag = "看"
+            else:
+                seeFlag = "闷"
+
+        if personStatus == "看" and seeFlag == "看" : # 无效操作，传入availble会自动过滤掉闷的数据
+            pass
+        elif personStatus == "闷" and seeFlag == "看": # mask掉闷的数据，选择了看
+            availble_actions = [i for i in availble_actions if i not in self.action_see_index_dicts]
+        elif personStatus == "闷" and seeFlag == "闷": # mask掉看的数据，选择了闷
+            availble_actions = [i for i in availble_actions if i not in self.action_notsee_index_dicts]
+        elif personStatus == "看" and seeFlag == "闷": # 无效操作，传入availble会自动过滤掉闷的数据
+            pass
+        if debug:print(personStatus,seeFlag)
+
         availble_actions_values = []
         for action in availble_actions:
-            availble_actions_values.append(prob[self.actions_index_dicts[action]])
+            availble_actions_values.append(prob_all[self.actions_index_dicts[action]])
         availble_actions_values = softmax(availble_actions_values)
 
         if debug:
             for k,v in zip(availble_actions,availble_actions_values):
                 print(k,v)
-
-
         return random_pick(availble_actions,availble_actions_values),max(availble_actions_values)
 
     def _one_hot(self,x,size=10):
@@ -299,6 +317,11 @@ class DQN:
 
     def experience_replay(self): #记忆回放
         return np.array(random.sample(self.memory, self.batch_size))
+
+    def experience_see_replay(self): #回放see动作下的数据，不去影响其他的一些节点
+        data = np.array(self.memory)
+        data = data[(data[:, 1] != "闷_2") & (data[:, 1] != "闷_4") & (data[:, 1] != "闷_8") & (data[:, 1] != "闷开_0")]
+        return np.array(random.sample(data, self.batch_size))
 
     def experience_open_replay(self): # 回放关于是否继续闷的数据用于训练
         """
