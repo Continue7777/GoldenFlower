@@ -198,9 +198,9 @@ class DQN:
         if personStatus == "看" and seeFlag == "看" : # 无效操作，传入availble会自动过滤掉闷的数据
             pass
         elif personStatus == "闷" and seeFlag == "看": # mask掉闷的数据，选择了看
-            availble_actions = [i for i in availble_actions if i not in self.action_see_index_dicts]
+            availble_actions = [i for i in availble_actions if i in self.action_see_index_dicts]
         elif personStatus == "闷" and seeFlag == "闷": # mask掉看的数据，选择了闷
-            availble_actions = [i for i in availble_actions if i not in self.action_notsee_index_dicts]
+            availble_actions = [i for i in availble_actions if i in self.action_notsee_index_dicts]
         elif personStatus == "看" and seeFlag == "闷": # 无效操作，传入availble会自动过滤掉闷的数据
             pass
         if debug:print(personStatus,seeFlag)
