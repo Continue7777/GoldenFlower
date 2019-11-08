@@ -170,7 +170,7 @@ class DQN:
                 break
         return item
 
-    def _softmax(self,x, alpha=1):
+    def _softmax(self,x, alpha=0.1):
         x_exp = np.exp(np.array(x) * alpha)
         # 如果是列向量，则axis=0
         x_sum = np.sum(x_exp, keepdims=True)
