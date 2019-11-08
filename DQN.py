@@ -170,6 +170,13 @@ class DQN:
                 break
         return item
 
+    def _greedy_e(self,seq,probabilities):
+        e = max(0.9 ** (self.step / 1000),0.1)
+        res = seq[np.argmax[probabilities]]
+        if random.random() < e:
+            res = random.choice(seq)
+        return res
+
     def _softmax(self,x, alpha=0.1):
         x_exp = np.exp(np.array(x) * alpha)
         # 如果是列向量，则axis=0
@@ -190,7 +197,8 @@ class DQN:
         if personStatus == "闷":
             _feed_dict = self._feed_dict(status)
             prob_not_see = self.sess.run(self.predictionsNotSee, feed_dict=_feed_dict)[0]
-            if self._random_pick(["闷_2","闷_4","闷_8","闷开_0","看"],self._softmax(prob_not_see)) == "看":
+            # if self._random_pick(["闷_2","闷_4","闷_8","闷开_0","看"],self._softmax(prob_not_see)) == "看":
+            if self._greedy_e(["闷_2","闷_4","闷_8","闷开_0","看"],prob_not_see) == "看":
                 seeFlag = "看"
             else:
                 seeFlag = "闷"
@@ -208,12 +216,14 @@ class DQN:
         availble_actions_values = []
         for action in availble_actions:
             availble_actions_values.append(prob_all[self.actions_index_dicts[action]])
-        availble_actions_values = self._softmax(availble_actions_values)
+        # availble_actions_values = self._softmax(availble_actions_values)
 
         if debug:
             for k,v in zip(availble_actions,availble_actions_values):
                 print(k,v)
-        return self._random_pick(availble_actions,availble_actions_values),max(availble_actions_values)
+        return self._greedy_e(availble_actions,availble_actions_values),max(availble_actions_values)
+        # return self._random_pick(availble_actions,availble_actions_values),max(availble_actions_values)
+
 
     def choose_action_max(self,status,availble_actions,step,debug=False): #通过训练好的网络，根据状态获取动作
         personStatus = status[0][2]
