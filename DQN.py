@@ -178,7 +178,7 @@ class DQN:
         return s
 
     def choose_action(self,status,availble_actions,step,debug=False): #通过训练好的网络，根据状态获取动作
-        personStatus = status[2]
+        personStatus = status[0][2]
         # 超出序列的直接开截断
         if step > 20 and "开_0" in availble_actions:
             return "开_0",-2
@@ -215,7 +215,7 @@ class DQN:
         return self._random_pick(availble_actions,availble_actions_values),max(availble_actions_values)
 
     def choose_action_max(self,status,availble_actions,step,debug=False): #通过训练好的网络，根据状态获取动作
-        personStatus = status[2]
+        personStatus = status[0][2]
         # 超出序列的直接开截断
         if step > 20 and "开_0" in availble_actions:
             return "开_0",-2
