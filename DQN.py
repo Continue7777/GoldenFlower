@@ -185,6 +185,7 @@ class DQN:
 
         _feed_dict = self._feed_dict(status)
         prob_all = self.sess.run(self.predictions, feed_dict=_feed_dict)[0]
+        seeFlag = "闷"
         # 状态为闷的，确定是否要看
         if personStatus == "闷":
             _feed_dict = self._feed_dict(status)
