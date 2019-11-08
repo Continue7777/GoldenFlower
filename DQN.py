@@ -161,23 +161,23 @@ class DQN:
         return res
 
 
+    def _random_pick(self,seq, probabilities):
+        x = random.uniform(0, 1)  # 首先随机生成一个0，1之间的随机数
+        cumulative_probability = 0.0
+        for item, item_probability in zip(seq, probabilities):  # seq代表待输入的字符串，prob代表各自字符串对应的概率
+            cumulative_probability += item_probability  # 只有当累加的概率比刚才随机生成的随机数大时候，才跳出，并输出此时对应的字符串
+            if x < cumulative_probability:
+                break
+        return item
+
+    def _softmax(self,x, alpha=1):
+        x_exp = np.exp(np.array(x) * alpha)
+        # 如果是列向量，则axis=0
+        x_sum = np.sum(x_exp, keepdims=True)
+        s = x_exp / x_sum
+        return s
+
     def choose_action(self,status,personStatus,availble_actions,step,debug=False): #通过训练好的网络，根据状态获取动作
-        def random_pick(seq, probabilities):
-            x = random.uniform(0, 1)  # 首先随机生成一个0，1之间的随机数
-            cumulative_probability = 0.0
-            for item, item_probability in zip(seq, probabilities):  # seq代表待输入的字符串，prob代表各自字符串对应的概率
-                cumulative_probability += item_probability  # 只有当累加的概率比刚才随机生成的随机数大时候，才跳出，并输出此时对应的字符串
-                if x < cumulative_probability:
-                    break
-            return item
-
-        def softmax(x, alpha=1):
-            x_exp = np.exp(np.array(x) * alpha)
-            # 如果是列向量，则axis=0
-            x_sum = np.sum(x_exp, keepdims=True)
-            s = x_exp / x_sum
-            return s
-
         # 超出序列的直接开截断
         if step > 20 and "开_0" in availble_actions:
             return "开_0",-2
@@ -206,12 +206,48 @@ class DQN:
         availble_actions_values = []
         for action in availble_actions:
             availble_actions_values.append(prob_all[self.actions_index_dicts[action]])
-        availble_actions_values = softmax(availble_actions_values)
+        availble_actions_values = self._softmax(availble_actions_values)
 
         if debug:
             for k,v in zip(availble_actions,availble_actions_values):
                 print(k,v)
-        return random_pick(availble_actions,availble_actions_values),max(availble_actions_values)
+        return self._random_pick(availble_actions,availble_actions_values),max(availble_actions_values)
+
+    def choose_action_max(self,status,personStatus,availble_actions,step,debug=False): #通过训练好的网络，根据状态获取动作
+        # 超出序列的直接开截断
+        if step > 20 and "开_0" in availble_actions:
+            return "开_0",-2
+
+        _feed_dict = self._feed_dict(status)
+        prob_all = self.sess.run(self.predictions, feed_dict=_feed_dict)[0]
+        # 状态为闷的，确定是否要看
+        if personStatus == "闷":
+            _feed_dict = self._feed_dict(status)
+            prob_not_see = self.sess.run(self.predictionsNotSee, feed_dict=_feed_dict)[0]
+            if np.argmax(prob_not_see) == len(self.action_notsee_index_dicts) - 1:
+                seeFlag = "看"
+            else:
+                seeFlag = "闷"
+
+        if personStatus == "看" and seeFlag == "看" : # 无效操作，传入availble会自动过滤掉闷的数据
+            pass
+        elif personStatus == "闷" and seeFlag == "看": # mask掉闷的数据，选择了看
+            availble_actions = [i for i in availble_actions if i not in self.action_see_index_dicts]
+        elif personStatus == "闷" and seeFlag == "闷": # mask掉看的数据，选择了闷
+            availble_actions = [i for i in availble_actions if i not in self.action_notsee_index_dicts]
+        elif personStatus == "看" and seeFlag == "闷": # 无效操作，传入availble会自动过滤掉闷的数据
+            pass
+        if debug:print(personStatus,seeFlag)
+
+        availble_actions_values = []
+        for action in availble_actions:
+            availble_actions_values.append(prob_all[self.actions_index_dicts[action]])
+        availble_actions_values = self._softmax(availble_actions_values)
+
+        if debug:
+            for k,v in zip(availble_actions,availble_actions_values):
+                print(k,v)
+        return availble_actions[np.argmax(availble_actions_values)],max(availble_actions_values)
 
     def _one_hot(self,x,size=10):
         res = np.zeros((len(x), size))
