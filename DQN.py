@@ -8,7 +8,7 @@ from GameEnv import GlodenFlower
 
 
 class DQN:
-    def __init__(self,embedding_size=10,sequence_length=20,learning_rate=0.01,batch_size=1000): #初始化
+    def __init__(self,embedding_size=50,sequence_length=20,learning_rate=0.01,batch_size=1000): #初始化
         self.embedding_size = embedding_size
         self.card_layer_unit = 20
         self.sequence_length = sequence_length
@@ -93,7 +93,7 @@ class DQN:
         self.playCardsEmb = tf.reshape(tf.nn.embedding_lookup(self.weights['card_emb'], self.playCardsInput),[-1, 3 * self.embedding_size]) # bs, 3 * emb
         self.playCardsFeatureEmb = tf.reshape(tf.nn.embedding_lookup(self.weights['card_feature1_emb'], self.playCardsFeatureInput),[-1,self.embedding_size])  # bs, 3 * emb
 
-        cell = tf.nn.rnn_cell.LSTMCell(num_units=256, state_is_tuple=True)
+        cell = tf.nn.rnn_cell.LSTMCell(num_units=128, state_is_tuple=True)
 
         outputs, states = tf.nn.bidirectional_dynamic_rnn(
             cell_fw=cell, cell_bw=cell, dtype=tf.float32, sequence_length=self.playSequenceLengthInput, inputs=self.playSequenceEmb
@@ -107,8 +107,8 @@ class DQN:
 
 
 
-        self.predictionsNotSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(self.last_output, 128)),len(self.action_notsee_index_dicts)) # bs,notsee + 1
-        self.predictionsSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(tf.concat([self.last_output, card_layer], 1), 128)),len(self.action_see_index_dicts)) # bs,see
+        self.predictionsNotSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(self.last_output, 64)),len(self.action_notsee_index_dicts)) # bs,notsee + 1
+        self.predictionsSee = tf.layers.dense(tf.nn.relu(tf.layers.dense(tf.concat([self.last_output, card_layer], 1), 64)),len(self.action_see_index_dicts)) # bs,see
         self.predictions = tf.concat([self.predictionsNotSee[:,:-1],self.predictionsSee],1) # bs see+not_see
         # self.maskOutput = tf.gather(self.mask,self.personStatusInput * tf.cast(~tf.equal(tf.arg_max(self.predictionsNotSee,1),len(self.action_notsee_index_dicts)-1),dtype=tf.int32))
         # 看 看 看 0
@@ -236,9 +236,9 @@ class DQN:
         if personStatus == "看" and seeFlag == "看" : # 无效操作，传入availble会自动过滤掉闷的数据
             pass
         elif personStatus == "闷" and seeFlag == "看": # mask掉闷的数据，选择了看
-            availble_actions = [i for i in availble_actions if i not in self.action_see_index_dicts]
+            availble_actions = [i for i in availble_actions if i  in self.action_see_index_dicts]
         elif personStatus == "闷" and seeFlag == "闷": # mask掉看的数据，选择了闷
-            availble_actions = [i for i in availble_actions if i not in self.action_notsee_index_dicts]
+            availble_actions = [i for i in availble_actions if i  in self.action_notsee_index_dicts]
         elif personStatus == "看" and seeFlag == "闷": # 无效操作，传入availble会自动过滤掉闷的数据
             pass
         if debug:print(personStatus,seeFlag)
