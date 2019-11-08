@@ -190,7 +190,7 @@ class DQN:
         if personStatus == "闷":
             _feed_dict = self._feed_dict(status)
             prob_not_see = self.sess.run(self.predictionsNotSee, feed_dict=_feed_dict)[0]
-            if self._random_pick(["闷_2","闷_4","闷_8","闷开_0","看"],prob_not_see) == "看":
+            if self._random_pick(["闷_2","闷_4","闷_8","闷开_0","看"],self._softmax(prob_not_see)) == "看":
                 seeFlag = "看"
             else:
                 seeFlag = "闷"
